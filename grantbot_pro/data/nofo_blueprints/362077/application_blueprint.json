@@ -1,0 +1,26 @@
+{
+  "opportunity_id": "362077",
+  "opportunity_number": "CPD-2600-DC-0099",
+  "title": "Preservation and Reinvestment Initiative for Community Enhancement (PRICE)",
+  "funder": "Department of Housing and Urban Development",
+  "acquisition_status": "FULL_TEXT_ACQUIRED",
+  "source_urls": [
+    "https://www.grants.gov/search-results-detail/362077",
+    "https://www.hud.gov/program_offices/comm_planning/price"
+  ],
+  "application_questions": [],
+  "requirements": [],
+  "scoring_criteria": [],
+  "budget_requirements": [],
+  "match_requirements": [],
+  "submission_requirements": [],
+  "required_attachments": [],
+  "eligibility": [],
+  "award_ceiling": null,
+  "award_floor": null,
+  "cost_sharing": null,
+  "warnings": [
+    "No application questions were extracted from acquired source text."
+  ],
+  "output_path": "/home/mrnobody/grantbot_pro/data/nofo_blueprints/362077/application_blueprint.json"
+}

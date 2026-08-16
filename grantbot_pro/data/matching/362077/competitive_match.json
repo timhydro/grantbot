@@ -1,0 +1,30 @@
+{
+  "opportunity_id": "362077",
+  "title": "Preservation and Reinvestment Initiative for Community Enhancement (PRICE)",
+  "funder": "Department of Housing and Urban Development",
+  "applicant_role": {
+    "role": "VERIFY",
+    "direct_applicant": false,
+    "partner_candidate": false,
+    "verification_required": true,
+    "blockers": [],
+    "rationale": [
+      "Direct nonprofit eligibility has not been established."
+    ]
+  },
+  "mission_fit_score": 20,
+  "readiness_score": 35,
+  "competitiveness_score": 27,
+  "burden_score": 0,
+  "final_score": 27,
+  "priority": "VERY_LOW",
+  "strengths": [],
+  "weaknesses": [
+    "Application questions are not yet fully extracted.",
+    "Application requirements are incomplete.",
+    "Scoring/evaluation criteria are not yet available.",
+    "Applicant eligibility requires verification."
+  ],
+  "blockers": [],
+  "output_path": "/home/mrnobody/grantbot_pro/data/matching/362077/competitive_match.json"
+}

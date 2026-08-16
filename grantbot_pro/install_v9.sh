@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$HOME/grantbot_pro"
+source .venv/bin/activate
+mkdir -p backups grantbot/nofo grantbot/api tests
+cp grantbot/app.py "backups/app_before_v9_$(date +%Y%m%d_%H%M%S).py"
+touch grantbot/nofo/__init__.py grantbot/api/__init__.py
+cat > grantbot/nofo/full_detail.py <<'PY'
+from __future__ import annotations
+from dataclasses import asdict, dataclass
+from typing import Any
+from grantbot.discovery.grants_gov import fetch_opportunity
+from grantbot.nofo.analyzer import analyze_nofo
+
+@dataclass(frozen=True, slots=True)
+class FullNofoResult:
+    opportunity_id: str
+    opportunity_number: str
+    title: str
+    funder: str
+    eligibility: list[str]
+    funding_instruments: list[str]
+    activity_categories: list[str]
+    award_ceiling: float | None
+    award_floor: float | None
+    cost_sharing: bool | None
+    attachment_count: int
+    full_announcement_present: bool
+    analysis: dict[str, Any]
+    eligibility_gate: dict[str, Any]
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+def _descriptions(items: Any) -> list[str]:
+    if not isinstance(items, list):
+        return []
+    out=[]
+    for item in items:
+        if isinstance(item, dict):
+            v=str(item.get("description","")).strip()
+            if v and v not in out:
+                out.append(v)
+    return out
+
+def _float(value: Any) -> float | None:
+    try:
+        return float(str(value).replace("$","").replace(",","").strip()) if value not in (None,"") else None
+    except ValueError:
+        return None
+
+def get_full_nofo_intelligence(opportunity_id: str | int) -> FullNofoResult:
+    d=fetch_opportunity(opportunity_id)
+    s=d.get("synopsis") or {}
+    title=str(d.get("opportunityTitle","")).strip()
+    number=str(d.get("opportunityNumber","")).strip()
+    funder=str(s.get("agencyName") or (d.get("agencyDetails") or {}).get("agencyName") or "").strip()
+    eligibility=_descriptions(s.get("applicantTypes"))
+    instruments=_descriptions(s.get("fundingInstruments"))
+    categories=_descriptions(s.get("fundingActivityCategories"))
+    folders=d.get("synopsisAttachmentFolders") or []
+    attachments=[]
+    for folder in folders:
+        if isinstance(folder,dict):
+            attachments.extend([x for x in (folder.get("synopsisAttachments") or []) if isinstance(x,dict)])
+    text="\n".join(x for x in [
+        title,number,funder,str(s.get("synopsisDesc","")).strip(),
+        " ".join(eligibility)," ".join(instruments)," ".join(categories),
+        str(d.get("originalDueDateDesc","")).strip()
+    ] if x)
+    analysis=analyze_nofo(text,title=title,funder=funder,opportunity_number=number).to_dict()
+    joined=" ".join(eligibility).lower()
+    nonprofit=any(x in joined for x in ("nonprofit","non-profit","501(c)(3)","faith-based","community-based"))
+    blockers=list(analysis.get("blockers",[]))
+    decision="REJECT" if blockers else ("PROCEED" if nonprofit else "VERIFY")
+    gate={
+        "decision":decision,
+        "nonprofit_explicitly_allowed":nonprofit,
+        "blockers":blockers,
+        "eligibility":eligibility,
+    }
+    full_present=any(
+        "nofo" in str(x.get("fileName","")).lower()
+        or "full announcement" in str(x.get("fileDescription","")).lower()
+        or "notice of funding" in str(x.get("fileDescription","")).lower()
+        for x in attachments
+    )
+    return FullNofoResult(
+        opportunity_id=str(d.get("id",opportunity_id)),
+        opportunity_number=number,title=title,funder=funder,
+        eligibility=eligibility,funding_instruments=instruments,
+        activity_categories=categories,award_ceiling=_float(s.get("awardCeiling")),
+        award_floor=_float(s.get("awardFloor")),
+        cost_sharing=s.get("costSharing") if isinstance(s.get("costSharing"),bool) else None,
+        attachment_count=len(attachments),full_announcement_present=full_present,
+        analysis=analysis,eligibility_gate=gate,
+    )
+PY
+cat > grantbot/api/nofo_v9.py <<'PY'
+from __future__ import annotations
+from typing import Any
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
+from grantbot.nofo.full_detail import get_full_nofo_intelligence
+
+router=APIRouter(prefix="/v9/nofo",tags=["Full NOFO Intelligence v9"])
+class FullNofoRequest(BaseModel):
+    opportunity_id: str = Field(min_length=1,max_length=50)
+@router.post("/inspect")
+def inspect(payload: FullNofoRequest) -> dict[str,Any]:
+    try:
+        return get_full_nofo_intelligence(payload.opportunity_id).to_dict()
+    except (RuntimeError,ValueError) as exc:
+        raise HTTPException(status_code=502,detail=str(exc)) from exc
+PY
+python3 - <<'PY'
+from pathlib import Path
+p=Path("grantbot/app.py")
+s=p.read_text(encoding="utf-8")
+imp="from grantbot.api.nofo_v9 import router as nofo_v9_router"
+reg="app.include_router(nofo_v9_router)"
+if imp not in s: s += "\n"+imp+"\n"
+if reg not in s: s += reg+"\n"
+p.write_text(s,encoding="utf-8")
+PY
+python3 -m py_compile grantbot/nofo/full_detail.py grantbot/api/nofo_v9.py
+python3 -m compileall -q grantbot
+python3 -c "import grantbot.app; paths=set(grantbot.app.app.openapi().get('paths',{})); assert '/v9/nofo/inspect' in paths; print('V9 ROUTE: OK')"
+echo "V9 INSTALL COMPLETE"

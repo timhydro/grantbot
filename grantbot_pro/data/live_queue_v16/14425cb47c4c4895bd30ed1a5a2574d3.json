@@ -1,0 +1,260 @@
+{
+  "run_id": "14425cb47c4c4895bd30ed1a5a2574d3",
+  "created_at": "2026-08-14T22:01:45.679068+00:00",
+  "statuses": "posted|forecasted",
+  "keywords": [
+    "reentry",
+    "supportive housing",
+    "workforce development"
+  ],
+  "rows_per_keyword": 3,
+  "deep_limit": 0,
+  "searched_keywords": 3,
+  "failed_keywords": [],
+  "total_raw_results": 9,
+  "unique_opportunities": 9,
+  "high_count": 0,
+  "medium_count": 0,
+  "reject_count": 9,
+  "items": [
+    {
+      "opportunity_id": "362839",
+      "opportunity_number": "HHS-2026-ACF-OCS-EAH-0027",
+      "title": "Affordable Housing and Supportive Services Demonstration",
+      "agency_code": "HHS-ACF-OCS",
+      "agency": "Administration for Children and Families - OCS",
+      "open_date": "07/24/2026",
+      "close_date": "08/24/2026",
+      "status": "posted",
+      "document_type": "synopsis",
+      "assistance_listings": [],
+      "matched_keywords": [
+        "supportive housing"
+      ],
+      "matched_domains": [
+        "housing",
+        "supportive_services"
+      ],
+      "fit_score": 30,
+      "final_score": 30,
+      "priority": "REJECT",
+      "rejection_reasons": [],
+      "strengths": [],
+      "weaknesses": [],
+      "blockers": [],
+      "analysis_level": "SUMMARY",
+      "next_action": "Archive unless new eligibility or mission-fit evidence changes the decision."
+    },
+    {
+      "opportunity_id": "363588",
+      "opportunity_number": "O-BJA-2026-172673",
+      "title": "BJA FY 2026 Smart Reentry Demonstration Program",
+      "agency_code": "USDOJ-OJP-BJA",
+      "agency": "Bureau of Justice Assistance",
+      "open_date": "08/13/2026",
+      "close_date": "09/24/2026",
+      "status": "posted",
+      "document_type": "synopsis",
+      "assistance_listings": [],
+      "matched_keywords": [
+        "reentry"
+      ],
+      "matched_domains": [
+        "reentry"
+      ],
+      "fit_score": 20,
+      "final_score": 20,
+      "priority": "REJECT",
+      "rejection_reasons": [],
+      "strengths": [],
+      "weaknesses": [],
+      "blockers": [],
+      "analysis_level": "SUMMARY",
+      "next_action": "Archive unless new eligibility or mission-fit evidence changes the decision."
+    },
+    {
+      "opportunity_id": "356629",
+      "opportunity_number": "VA-GPD-FORECAST-FY2026-FY2028",
+      "title": "GPD Grant Forecast",
+      "agency_code": "VA-HPGPDP",
+      "agency": "Homeless Providers Grant and Per Diem Program",
+      "open_date": "10/03/2024",
+      "close_date": "",
+      "status": "forecasted",
+      "document_type": "forecast",
+      "assistance_listings": [],
+      "matched_keywords": [
+        "supportive housing"
+      ],
+      "matched_domains": [
+        "homelessness"
+      ],
+      "fit_score": 20,
+      "final_score": 20,
+      "priority": "REJECT",
+      "rejection_reasons": [],
+      "strengths": [],
+      "weaknesses": [],
+      "blockers": [],
+      "analysis_level": "SUMMARY",
+      "next_action": "Archive unless new eligibility or mission-fit evidence changes the decision."
+    },
+    {
+      "opportunity_id": "361994",
+      "opportunity_number": "PIH-2600-DC-0005",
+      "title": "Resident Opportunity and Self-Sufficiency Service Coordinator (ROSS-SC) Program &ndash; Fiscal Year 2026",
+      "agency_code": "HUD",
+      "agency": "Department of Housing and Urban Development",
+      "open_date": "04/21/2026",
+      "close_date": "",
+      "status": "forecasted",
+      "document_type": "forecast",
+      "assistance_listings": [],
+      "matched_keywords": [
+        "supportive housing"
+      ],
+      "matched_domains": [
+        "housing"
+      ],
+      "fit_score": 20,
+      "final_score": 20,
+      "priority": "REJECT",
+      "rejection_reasons": [],
+      "strengths": [],
+      "weaknesses": [],
+      "blockers": [],
+      "analysis_level": "SUMMARY",
+      "next_action": "Archive unless new eligibility or mission-fit evidence changes the decision."
+    },
+    {
+      "opportunity_id": "344608",
+      "opportunity_number": "23-520",
+      "title": "Training-based Workforce Development for Advanced Cyberinfrastructure (CyberTraining)",
+      "agency_code": "NSF",
+      "agency": "U.S. National Science Foundation",
+      "open_date": "11/22/2022",
+      "close_date": "01/21/2027",
+      "status": "posted",
+      "document_type": "synopsis",
+      "assistance_listings": [],
+      "matched_keywords": [
+        "workforce development"
+      ],
+      "matched_domains": [
+        "workforce"
+      ],
+      "fit_score": 15,
+      "final_score": 15,
+      "priority": "REJECT",
+      "rejection_reasons": [],
+      "strengths": [],
+      "weaknesses": [],
+      "blockers": [],
+      "analysis_level": "SUMMARY",
+      "next_action": "Archive unless new eligibility or mission-fit evidence changes the decision."
+    },
+    {
+      "opportunity_id": "361169",
+      "opportunity_number": "USDA-NIFA-AFRI-011596",
+      "title": "Agriculture and Food Research Initiative Competitive Grants Program Education and Workforce Development",
+      "agency_code": "USDA-NIFA",
+      "agency": "National Institute of Food and Agriculture",
+      "open_date": "01/20/2026",
+      "close_date": "12/31/2026",
+      "status": "posted",
+      "document_type": "synopsis",
+      "assistance_listings": [],
+      "matched_keywords": [
+        "workforce development"
+      ],
+      "matched_domains": [
+        "workforce"
+      ],
+      "fit_score": 15,
+      "final_score": 15,
+      "priority": "REJECT",
+      "rejection_reasons": [],
+      "strengths": [],
+      "weaknesses": [],
+      "blockers": [],
+      "analysis_level": "SUMMARY",
+      "next_action": "Archive unless new eligibility or mission-fit evidence changes the decision."
+    },
+    {
+      "opportunity_id": "363602",
+      "opportunity_number": "O-BJA-2026-172676",
+      "title": "BJA FY 2026 Public Safety and Mental Health Initiative",
+      "agency_code": "USDOJ-OJP-BJA",
+      "agency": "Bureau of Justice Assistance",
+      "open_date": "08/14/2026",
+      "close_date": "09/25/2026",
+      "status": "posted",
+      "document_type": "synopsis",
+      "assistance_listings": [],
+      "matched_keywords": [
+        "reentry"
+      ],
+      "matched_domains": [],
+      "fit_score": 0,
+      "final_score": 0,
+      "priority": "REJECT",
+      "rejection_reasons": [],
+      "strengths": [],
+      "weaknesses": [],
+      "blockers": [],
+      "analysis_level": "SUMMARY",
+      "next_action": "Archive unless new eligibility or mission-fit evidence changes the decision."
+    },
+    {
+      "opportunity_id": "357658",
+      "opportunity_number": "PAR-25-155",
+      "title": "Limited Competition: Small Grant Program for the NCATS Clinical and Translational Science Award (CTSA) Program (R03 Clinical Trial Optional)",
+      "agency_code": "HHS-NIH11",
+      "agency": "National Institutes of Health",
+      "open_date": "12/11/2024",
+      "close_date": "10/19/2026",
+      "status": "posted",
+      "document_type": "synopsis",
+      "assistance_listings": [],
+      "matched_keywords": [
+        "reentry"
+      ],
+      "matched_domains": [],
+      "fit_score": 0,
+      "final_score": 0,
+      "priority": "REJECT",
+      "rejection_reasons": [],
+      "strengths": [],
+      "weaknesses": [],
+      "blockers": [],
+      "analysis_level": "SUMMARY",
+      "next_action": "Archive unless new eligibility or mission-fit evidence changes the decision."
+    },
+    {
+      "opportunity_id": "350230",
+      "opportunity_number": "PD-24-1340",
+      "title": "Research in the Formation of Engineers",
+      "agency_code": "NSF",
+      "agency": "U.S. National Science Foundation",
+      "open_date": "09/17/2023",
+      "close_date": "",
+      "status": "posted",
+      "document_type": "synopsis",
+      "assistance_listings": [],
+      "matched_keywords": [
+        "workforce development"
+      ],
+      "matched_domains": [],
+      "fit_score": 0,
+      "final_score": 0,
+      "priority": "REJECT",
+      "rejection_reasons": [],
+      "strengths": [],
+      "weaknesses": [],
+      "blockers": [],
+      "analysis_level": "SUMMARY",
+      "next_action": "Archive unless new eligibility or mission-fit evidence changes the decision."
+    }
+  ],
+  "output_path": "/home/mrnobody/grantbot_pro/data/live_queue_v16/14425cb47c4c4895bd30ed1a5a2574d3.json"
+}

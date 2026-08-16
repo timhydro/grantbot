@@ -1,0 +1,55 @@
+# Python environments
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+.git-credentials
+.netrc
+
+# Local GitHub credentials
+.config/gh/
+
+# Databases / runtime state
+*.db
+*.sqlite
+*.sqlite3
+
+# GrantBot generated secrets
+**/master_api_key.txt
+
+# Logs and runtime output
+*.log
+logs/
+tmp/
+temp/
+
+# Backups
+backups/
+
+# OS/editor junk
+.DS_Store
+Thumbs.db
+*.swp
+*~

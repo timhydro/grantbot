@@ -1,0 +1,33 @@
+{
+  "opportunity_id": "362839",
+  "opportunity_number": "HHS-2026-ACF-OCS-EAH-0027",
+  "title": "Affordable Housing and Supportive Services Demonstration",
+  "funder": "Administration for Children and Families - OCS",
+  "acquisition_status": "FULL_TEXT_ACQUIRED",
+  "source_urls": [
+    "https://www.grants.gov/search-results-detail/362839"
+  ],
+  "application_questions": [],
+  "requirements": [],
+  "scoring_criteria": [],
+  "budget_requirements": [],
+  "match_requirements": [],
+  "submission_requirements": [],
+  "required_attachments": [],
+  "eligibility": [
+    "County governments",
+    "Special district governments",
+    "City or township governments",
+    "Nonprofits having a 501(c)(3) status with the IRS, other than institutions of higher education",
+    "Native American tribal governments (Federally recognized)",
+    "Native American tribal organizations (other than Federally recognized tribal governments)",
+    "Others (see text field entitled \"Additional Information on Eligibility\" for clarification)"
+  ],
+  "award_ceiling": 300000.0,
+  "award_floor": 150000.0,
+  "cost_sharing": true,
+  "warnings": [
+    "No application questions were extracted from acquired source text."
+  ],
+  "output_path": "/home/mrnobody/grantbot_pro/data/nofo_blueprints/362839/application_blueprint.json"
+}

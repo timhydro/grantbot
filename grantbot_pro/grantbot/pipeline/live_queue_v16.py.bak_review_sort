@@ -1,0 +1,799 @@
+from __future__ import annotations
+
+import json
+import os
+import re
+import sqlite3
+import ssl
+import urllib.error
+import urllib.request
+import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Callable, Iterable
+
+
+SEARCH_URL = "https://api.grants.gov/v1/api/search2"
+TIMEOUT_SECONDS = 30
+MAX_KEYWORDS = 25
+MAX_ROWS_PER_KEYWORD = 50
+
+DEFAULT_KEYWORDS = (
+    "reentry",
+    "formerly incarcerated",
+    "justice involved employment",
+    "homelessness",
+    "supportive housing",
+    "transitional housing",
+    "affordable housing",
+    "workforce development",
+    "employment training",
+    "job training",
+    "community development",
+    "economic opportunity",
+    "substance use recovery support",
+    "capital construction nonprofit",
+)
+
+DOMAIN_RULES: tuple[tuple[str, int, tuple[str, ...]], ...] = (
+    (
+        "reentry",
+        20,
+        (
+            "reentry",
+            "re-entry",
+            "returning citizen",
+            "formerly incarcerated",
+            "justice involved",
+            "justice-involved",
+            "offender reintegration",
+            "post-release",
+        ),
+    ),
+    (
+        "homelessness",
+        20,
+        ("homeless", "homelessness", "unsheltered"),
+    ),
+    (
+        "housing",
+        20,
+        (
+            "housing",
+            "shelter",
+            "tiny home",
+            "supportive housing",
+            "transitional housing",
+            "affordable housing",
+        ),
+    ),
+    (
+        "employment",
+        15,
+        (
+            "employment",
+            "job placement",
+            "apprenticeship",
+            "occupational",
+        ),
+    ),
+    (
+        "workforce",
+        15,
+        ("workforce", "job training", "vocational", "career pathway"),
+    ),
+    (
+        "supportive_services",
+        10,
+        (
+            "supportive service",
+            "case management",
+            "mentorship",
+            "substance use",
+            "recovery support",
+        ),
+    ),
+)
+
+HARD_REJECT_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
+    (
+        "academic or research fellowship",
+        re.compile(
+            r"\b(postdoctoral|doctoral fellowship|research fellowship|"
+            r"graduate fellowship|dissertation|faculty research)\b",
+            re.I,
+        ),
+    ),
+    (
+        "specialized higher-education eligibility",
+        re.compile(
+            r"\b(institutions? of higher education|tribal colleges?|"
+            r"minority[- ]serving institutions?|university centers?)\b",
+            re.I,
+        ),
+    ),
+    (
+        "specialized commercial research eligibility",
+        re.compile(
+            r"\b(SBIR|STTR|small business innovation research)\b",
+            re.I,
+        ),
+    ),
+)
+
+
+@dataclass(frozen=True, slots=True)
+class QueueItem:
+    opportunity_id: str
+    opportunity_number: str
+    title: str
+    agency_code: str
+    agency: str
+    open_date: str
+    close_date: str
+    status: str
+    document_type: str
+    assistance_listings: list[str]
+    matched_keywords: list[str]
+    matched_domains: list[str]
+    fit_score: int
+    final_score: int
+    priority: str
+    rejection_reasons: list[str]
+    strengths: list[str]
+    weaknesses: list[str]
+    blockers: list[str]
+    analysis_level: str
+    next_action: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
+class QueueRun:
+    run_id: str
+    created_at: str
+    statuses: str
+    keywords: list[str]
+    rows_per_keyword: int
+    deep_limit: int
+    searched_keywords: int
+    failed_keywords: list[dict[str, str]]
+    total_raw_results: int
+    unique_opportunities: int
+    high_count: int
+    medium_count: int
+    reject_count: int
+    items: list[QueueItem]
+    output_path: str
+
+    def to_dict(self) -> dict[str, Any]:
+        data = asdict(self)
+        data["items"] = [item.to_dict() for item in self.items]
+        return data
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def _db_path() -> Path:
+    configured = os.getenv("GRANTBOT_DB_PATH", "").strip()
+    if configured:
+        return Path(configured).expanduser().resolve()
+    return _root() / "data" / "grantbot.db"
+
+
+def _post_json(url: str, payload: dict[str, Any]) -> dict[str, Any]:
+    body = json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(
+        url,
+        data=body,
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "User-Agent": "GrantBotPro/16.0",
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(
+            request,
+            timeout=TIMEOUT_SECONDS,
+            context=ssl.create_default_context(),
+        ) as response:
+            raw = response.read(10 * 1024 * 1024)
+    except urllib.error.HTTPError as exc:
+        detail = exc.read(2000).decode("utf-8", errors="replace")
+        raise RuntimeError(
+            f"Grants.gov HTTP {exc.code}: {detail}"
+        ) from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"Grants.gov connection failed: {exc}") from exc
+
+    try:
+        data = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("Grants.gov returned invalid JSON") from exc
+
+    if not isinstance(data, dict):
+        raise RuntimeError("Grants.gov returned a non-object payload")
+
+    error_code = data.get("errorcode")
+    if error_code not in (None, 0, "0"):
+        raise RuntimeError(
+            f"Grants.gov error {error_code}: {data.get('msg', 'unknown error')}"
+        )
+
+    return data
+
+
+def _as_text(value: Any) -> str:
+    if value is None:
+        return ""
+    return " ".join(str(value).split()).strip()
+
+
+def _as_list(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [_as_text(item) for item in value if _as_text(item)]
+    if value in (None, ""):
+        return []
+    return [_as_text(value)]
+
+
+def _normalize_hit(hit: dict[str, Any], keyword: str) -> dict[str, Any]:
+    opportunity_id = _as_text(hit.get("id") or hit.get("opportunityId"))
+    opportunity_number = _as_text(
+        hit.get("number") or hit.get("opportunityNumber")
+    )
+    key = opportunity_id or opportunity_number
+
+    if not key:
+        raise ValueError("Grants.gov result lacks an opportunity identifier")
+
+    if not re.fullmatch(r"[A-Za-z0-9._-]{1,80}", opportunity_id or key):
+        raise ValueError("Grants.gov result has an invalid opportunity identifier")
+
+    return {
+        "key": key,
+        "opportunity_id": opportunity_id or opportunity_number,
+        "opportunity_number": opportunity_number,
+        "title": _as_text(hit.get("title") or hit.get("opportunityTitle")),
+        "agency_code": _as_text(hit.get("agencyCode")),
+        "agency": _as_text(hit.get("agencyName") or hit.get("agency")),
+        "open_date": _as_text(hit.get("openDate")),
+        "close_date": _as_text(hit.get("closeDate")),
+        "status": _as_text(hit.get("oppStatus") or hit.get("status")),
+        "document_type": _as_text(hit.get("docType")),
+        "assistance_listings": _as_list(
+            hit.get("alnist") or hit.get("assistanceListings")
+        ),
+        "matched_keywords": [keyword],
+    }
+
+
+def search_keyword(
+    keyword: str,
+    *,
+    rows: int = 10,
+    statuses: str = "posted|forecasted",
+) -> list[dict[str, Any]]:
+    keyword = _as_text(keyword)
+    if not keyword:
+        raise ValueError("keyword is required")
+    if not 1 <= int(rows) <= MAX_ROWS_PER_KEYWORD:
+        raise ValueError(
+            f"rows must be between 1 and {MAX_ROWS_PER_KEYWORD}"
+        )
+
+    payload = {
+        "keyword": keyword,
+        "rows": int(rows),
+        "oppStatuses": _as_text(statuses) or "posted|forecasted",
+        "startRecordNum": 0,
+    }
+    raw = _post_json(SEARCH_URL, payload)
+    data = raw.get("data") if isinstance(raw.get("data"), dict) else raw
+    hits = data.get("oppHits", []) if isinstance(data, dict) else []
+
+    if not isinstance(hits, list):
+        raise RuntimeError("Grants.gov search response lacks oppHits")
+
+    normalized: list[dict[str, Any]] = []
+    for hit in hits:
+        if not isinstance(hit, dict):
+            continue
+        try:
+            normalized.append(_normalize_hit(hit, keyword))
+        except ValueError:
+            continue
+    return normalized
+
+
+def _fit(title: str, agency: str) -> tuple[int, list[str], list[str]]:
+    text = f"{title} {agency}".casefold()
+    rejection_reasons = [
+        reason
+        for reason, pattern in HARD_REJECT_RULES
+        if pattern.search(text)
+    ]
+    matched_domains: list[str] = []
+    score = 0
+
+    for domain, weight, terms in DOMAIN_RULES:
+        if any(term in text for term in terms):
+            matched_domains.append(domain)
+            score += weight
+
+    if rejection_reasons:
+        score = 0
+
+    return min(100, score), matched_domains, rejection_reasons
+
+
+def _priority(score: int, blocked: bool) -> str:
+    if blocked:
+        return "REJECT"
+    if score >= 40:
+        return "HIGH"
+    if score >= 20:
+        return "MEDIUM"
+    if score >= 10:
+        return "REVIEW"
+    return "REJECT"
+
+
+def _next_action(priority: str, opportunity_id: str) -> str:
+    if priority == "HIGH":
+        return (
+            "Promote immediately through /v16/queue/promote/"
+            f"{opportunity_id} for full NOFO, match, and readiness analysis."
+        )
+    if priority == "MEDIUM":
+        return (
+            "Review applicant eligibility, deadline, award size, and match burden; "
+            "promote if viable."
+        )
+    if priority == "REVIEW":
+        return (
+            "Perform eligibility and NOFO review before deciding whether to promote or archive."
+        )
+    return "Archive unless new eligibility or mission-fit evidence changes the decision."
+
+
+def _dedupe_hits(hits: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+    merged: dict[str, dict[str, Any]] = {}
+
+    for hit in hits:
+        key = _as_text(hit.get("key"))
+        if not key:
+            continue
+        if key not in merged:
+            merged[key] = dict(hit)
+            merged[key]["matched_keywords"] = list(
+                dict.fromkeys(_as_list(hit.get("matched_keywords")))
+            )
+            continue
+
+        current = merged[key]
+        current["matched_keywords"] = list(
+            dict.fromkeys(
+                _as_list(current.get("matched_keywords"))
+                + _as_list(hit.get("matched_keywords"))
+            )
+        )
+        for field_name, value in hit.items():
+            if field_name in {"matched_keywords", "key"}:
+                continue
+            if not current.get(field_name) and value:
+                current[field_name] = value
+
+    return list(merged.values())
+
+
+def _deep_analysis(opportunity_id: str) -> dict[str, Any]:
+    from grantbot.matching.competitive_v14 import analyze_competitiveness
+
+    result = analyze_competitiveness(
+        opportunity_id,
+        acquire_if_missing=True,
+    ).to_dict()
+    return result
+
+
+def _to_queue_item(
+    hit: dict[str, Any],
+    *,
+    deep: dict[str, Any] | None = None,
+    deep_error: str | None = None,
+) -> QueueItem:
+    fit_score, domains, rejection_reasons = _fit(
+        _as_text(hit.get("title")),
+        _as_text(hit.get("agency")),
+    )
+    final_score = fit_score
+    blockers: list[str] = []
+    strengths: list[str] = []
+    weaknesses: list[str] = []
+    analysis_level = "SUMMARY"
+
+    if deep is not None:
+        analysis_level = "FULL"
+        final_score = int(deep.get("final_score", fit_score) or 0)
+        blockers = _as_list(deep.get("blockers"))
+        strengths = _as_list(deep.get("strengths"))
+        weaknesses = _as_list(deep.get("weaknesses"))
+        if _as_text(deep.get("priority")).upper() == "REJECT":
+            blockers.append("Full eligibility/competitive analysis rejected opportunity.")
+    elif deep_error:
+        analysis_level = "SUMMARY_DEEP_ERROR"
+        weaknesses.append(deep_error)
+
+    blocked = bool(rejection_reasons or blockers)
+    priority = _priority(final_score, blocked)
+    opportunity_id = _as_text(hit.get("opportunity_id"))
+
+    return QueueItem(
+        opportunity_id=opportunity_id,
+        opportunity_number=_as_text(hit.get("opportunity_number")),
+        title=_as_text(hit.get("title")),
+        agency_code=_as_text(hit.get("agency_code")),
+        agency=_as_text(hit.get("agency")),
+        open_date=_as_text(hit.get("open_date")),
+        close_date=_as_text(hit.get("close_date")),
+        status=_as_text(hit.get("status")),
+        document_type=_as_text(hit.get("document_type")),
+        assistance_listings=_as_list(hit.get("assistance_listings")),
+        matched_keywords=_as_list(hit.get("matched_keywords")),
+        matched_domains=domains,
+        fit_score=fit_score,
+        final_score=max(0, min(100, final_score)),
+        priority=priority,
+        rejection_reasons=list(dict.fromkeys(rejection_reasons)),
+        strengths=list(dict.fromkeys(strengths)),
+        weaknesses=list(dict.fromkeys(weaknesses)),
+        blockers=list(dict.fromkeys(blockers)),
+        analysis_level=analysis_level,
+        next_action=_next_action(priority, opportunity_id),
+    )
+
+
+def _connect() -> sqlite3.Connection:
+    path = _db_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    connection = sqlite3.connect(path, timeout=30)
+    connection.row_factory = sqlite3.Row
+    connection.execute("PRAGMA journal_mode=WAL")
+    connection.execute("PRAGMA foreign_keys=ON")
+    return connection
+
+
+def initialize_schema() -> None:
+    with _connect() as connection:
+        connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS live_discovery_runs_v16 (
+                run_id TEXT PRIMARY KEY,
+                created_at TEXT NOT NULL,
+                statuses TEXT NOT NULL,
+                keywords_json TEXT NOT NULL,
+                rows_per_keyword INTEGER NOT NULL,
+                deep_limit INTEGER NOT NULL,
+                searched_keywords INTEGER NOT NULL,
+                failed_keywords_json TEXT NOT NULL,
+                total_raw_results INTEGER NOT NULL,
+                unique_opportunities INTEGER NOT NULL,
+                high_count INTEGER NOT NULL,
+                medium_count INTEGER NOT NULL,
+                reject_count INTEGER NOT NULL,
+                output_path TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS live_opportunity_queue_v16 (
+                run_id TEXT NOT NULL,
+                opportunity_id TEXT NOT NULL,
+                opportunity_number TEXT NOT NULL,
+                title TEXT NOT NULL,
+                agency TEXT NOT NULL,
+                close_date TEXT NOT NULL,
+                fit_score INTEGER NOT NULL,
+                final_score INTEGER NOT NULL,
+                priority TEXT NOT NULL,
+                analysis_level TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                PRIMARY KEY (run_id, opportunity_id),
+                FOREIGN KEY (run_id)
+                    REFERENCES live_discovery_runs_v16(run_id)
+                    ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_live_queue_v16_priority
+                ON live_opportunity_queue_v16(run_id, priority, final_score DESC);
+            """
+        )
+
+
+def _persist(run: QueueRun) -> None:
+    initialize_schema()
+
+    with _connect() as connection:
+        connection.execute(
+            """
+            INSERT INTO live_discovery_runs_v16 (
+                run_id, created_at, statuses, keywords_json,
+                rows_per_keyword, deep_limit, searched_keywords,
+                failed_keywords_json, total_raw_results,
+                unique_opportunities, high_count, medium_count,
+                reject_count, output_path
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                run.run_id,
+                run.created_at,
+                run.statuses,
+                json.dumps(run.keywords),
+                run.rows_per_keyword,
+                run.deep_limit,
+                run.searched_keywords,
+                json.dumps(run.failed_keywords),
+                run.total_raw_results,
+                run.unique_opportunities,
+                run.high_count,
+                run.medium_count,
+                run.reject_count,
+                run.output_path,
+            ),
+        )
+        connection.executemany(
+            """
+            INSERT INTO live_opportunity_queue_v16 (
+                run_id, opportunity_id, opportunity_number, title,
+                agency, close_date, fit_score, final_score,
+                priority, analysis_level, payload_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                (
+                    run.run_id,
+                    item.opportunity_id,
+                    item.opportunity_number,
+                    item.title,
+                    item.agency,
+                    item.close_date,
+                    item.fit_score,
+                    item.final_score,
+                    item.priority,
+                    item.analysis_level,
+                    json.dumps(item.to_dict(), ensure_ascii=False),
+                )
+                for item in run.items
+            ],
+        )
+
+
+def _write_json(run: QueueRun) -> None:
+    output = Path(run.output_path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    serialized = json.dumps(run.to_dict(), indent=2, ensure_ascii=False) + "\n"
+    temporary = output.with_suffix(".tmp")
+    temporary.write_text(serialized, encoding="utf-8")
+    temporary.replace(output)
+    latest = output.parent / "latest.json"
+    latest_tmp = latest.with_suffix(".tmp")
+    latest_tmp.write_text(serialized, encoding="utf-8")
+    latest_tmp.replace(latest)
+
+
+def discover_ranked_queue(
+    *,
+    keywords: list[str] | None = None,
+    rows_per_keyword: int = 10,
+    statuses: str = "posted|forecasted",
+    deep_limit: int = 0,
+    searcher: Callable[..., list[dict[str, Any]]] | None = None,
+    deep_analyzer: Callable[[str], dict[str, Any]] | None = None,
+) -> QueueRun:
+    selected_keywords = list(
+        dict.fromkeys(
+            _as_text(value)
+            for value in (keywords or list(DEFAULT_KEYWORDS))
+            if _as_text(value)
+        )
+    )
+    if not selected_keywords:
+        raise ValueError("At least one keyword is required")
+    if len(selected_keywords) > MAX_KEYWORDS:
+        raise ValueError(f"No more than {MAX_KEYWORDS} keywords are allowed")
+    if not 1 <= int(rows_per_keyword) <= MAX_ROWS_PER_KEYWORD:
+        raise ValueError(
+            f"rows_per_keyword must be between 1 and {MAX_ROWS_PER_KEYWORD}"
+        )
+    if not 0 <= int(deep_limit) <= 25:
+        raise ValueError("deep_limit must be between 0 and 25")
+
+    active_searcher = searcher or search_keyword
+    active_deep = deep_analyzer or _deep_analysis
+    all_hits: list[dict[str, Any]] = []
+    failures: list[dict[str, str]] = []
+
+    workers = min(5, len(selected_keywords))
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        future_to_keyword = {
+            executor.submit(
+                active_searcher,
+                keyword,
+                rows=int(rows_per_keyword),
+                statuses=statuses,
+            ): keyword
+            for keyword in selected_keywords
+        }
+        for future in as_completed(future_to_keyword):
+            keyword = future_to_keyword[future]
+            try:
+                all_hits.extend(future.result())
+            except Exception as exc:
+                failures.append(
+                    {
+                        "keyword": keyword,
+                        "error": f"{type(exc).__name__}: {exc}",
+                    }
+                )
+
+    if not all_hits and failures:
+        raise RuntimeError(
+            "Every Grants.gov search failed: "
+            + "; ".join(
+                f"{item['keyword']}: {item['error']}"
+                for item in failures[:5]
+            )
+        )
+
+    unique_hits = _dedupe_hits(all_hits)
+    summary_items = [_to_queue_item(hit) for hit in unique_hits]
+    deep_ids = [
+        item.opportunity_id
+        for item in sorted(
+            summary_items,
+            key=lambda item: (-item.fit_score, item.close_date, item.title),
+        )
+        if item.priority in {"HIGH", "MEDIUM"}
+    ][: int(deep_limit)]
+
+    deep_results: dict[str, dict[str, Any]] = {}
+    deep_errors: dict[str, str] = {}
+    for opportunity_id in deep_ids:
+        try:
+            deep_results[opportunity_id] = active_deep(opportunity_id)
+        except Exception as exc:
+            deep_errors[opportunity_id] = (
+                f"Full analysis failed: {type(exc).__name__}: {exc}"
+            )
+
+    items = [
+        _to_queue_item(
+            hit,
+            deep=deep_results.get(_as_text(hit.get("opportunity_id"))),
+            deep_error=deep_errors.get(_as_text(hit.get("opportunity_id"))),
+        )
+        for hit in unique_hits
+    ]
+    priority_order = {"HIGH": 0, "MEDIUM": 1, "REJECT": 2}
+    items.sort(
+        key=lambda item: (
+            priority_order[item.priority],
+            -item.final_score,
+            item.close_date or "9999-99-99",
+            item.title.casefold(),
+        )
+    )
+
+    run_id = uuid.uuid4().hex
+    output = _root() / "data" / "live_queue_v16" / f"{run_id}.json"
+    run = QueueRun(
+        run_id=run_id,
+        created_at=_utc_now(),
+        statuses=_as_text(statuses) or "posted|forecasted",
+        keywords=selected_keywords,
+        rows_per_keyword=int(rows_per_keyword),
+        deep_limit=int(deep_limit),
+        searched_keywords=len(selected_keywords) - len(failures),
+        failed_keywords=sorted(failures, key=lambda item: item["keyword"]),
+        total_raw_results=len(all_hits),
+        unique_opportunities=len(items),
+        high_count=sum(item.priority == "HIGH" for item in items),
+        medium_count=sum(item.priority == "MEDIUM" for item in items),
+        reject_count=sum(item.priority == "REJECT" for item in items),
+        items=items,
+        output_path=str(output),
+    )
+    _persist(run)
+    _write_json(run)
+    return run
+
+
+def _load_json(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        raise FileNotFoundError(str(path))
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise RuntimeError(f"Invalid queue file: {path}")
+    return data
+
+
+def load_latest() -> dict[str, Any]:
+    return _load_json(_root() / "data" / "live_queue_v16" / "latest.json")
+
+
+def load_run(run_id: str) -> dict[str, Any]:
+    safe_id = _as_text(run_id)
+    if not re.fullmatch(r"[a-f0-9]{32}", safe_id):
+        raise ValueError("Invalid run_id")
+    return _load_json(
+        _root() / "data" / "live_queue_v16" / f"{safe_id}.json"
+    )
+
+
+def promote_opportunity(
+    opportunity_id: str,
+    *,
+    manual_urls: list[str] | None = None,
+) -> dict[str, Any]:
+    opportunity_id = _as_text(opportunity_id)
+    if (
+        not opportunity_id
+        or not re.fullmatch(r"[A-Za-z0-9._-]{1,80}", opportunity_id)
+        or ".." in opportunity_id
+    ):
+        raise ValueError("Invalid opportunity_id")
+
+    from grantbot.compliance.readiness_v15 import evaluate_readiness
+    from grantbot.matching.competitive_v14 import analyze_competitiveness
+    from grantbot.nofo.acquisition_v13 import acquire_blueprint
+
+    blueprint = acquire_blueprint(
+        opportunity_id,
+        manual_urls=manual_urls or [],
+    ).to_dict()
+    competitive = analyze_competitiveness(
+        opportunity_id,
+        acquire_if_missing=False,
+    ).to_dict()
+    readiness = evaluate_readiness(opportunity_id).to_dict()
+    return {
+        "opportunity_id": opportunity_id,
+        "promoted_at": _utc_now(),
+        "blueprint": blueprint,
+        "competitive_match": competitive,
+        "readiness": readiness,
+    }
+
+
+def health() -> dict[str, Any]:
+    initialize_schema()
+    with _connect() as connection:
+        tables = {
+            row[0]
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            )
+        }
+    return {
+        "healthy": True,
+        "version": 16,
+        "official_search_endpoint": SEARCH_URL,
+        "database": str(_db_path()),
+        "queue_tables_ready": {
+            "live_discovery_runs_v16",
+            "live_opportunity_queue_v16",
+        }.issubset(tables),
+        "default_keywords": list(DEFAULT_KEYWORDS),
+    }

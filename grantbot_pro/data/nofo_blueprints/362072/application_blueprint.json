@@ -1,0 +1,39 @@
+{
+  "opportunity_id": "362072",
+  "opportunity_number": "HHS-2026-ACF-ACYF-CY-0160",
+  "title": "National Communication System for Runaway and Homeless Youth Program",
+  "funder": "Administration for Children & Families - ACYF/FYSB",
+  "acquisition_status": "FULL_TEXT_ACQUIRED",
+  "source_urls": [
+    "https://www.grants.gov/search-results-detail/362072"
+  ],
+  "application_questions": [],
+  "requirements": [],
+  "scoring_criteria": [],
+  "budget_requirements": [],
+  "match_requirements": [],
+  "submission_requirements": [],
+  "required_attachments": [],
+  "eligibility": [
+    "Native American tribal governments (Federally recognized)",
+    "Native American tribal organizations (other than Federally recognized tribal governments)",
+    "Others (see text field entitled \"Additional Information on Eligibility\" for clarification)",
+    "Independent school districts",
+    "Nonprofits having a 501(c)(3) status with the IRS, other than institutions of higher education",
+    "State governments",
+    "City or township governments",
+    "County governments",
+    "Public and State controlled institutions of higher education",
+    "Special district governments",
+    "Private institutions of higher education",
+    "Nonprofits that do not have a 501(c)(3) status with the IRS, other than institutions of higher education",
+    "Public housing authorities/Indian housing authorities"
+  ],
+  "award_ceiling": 1800000.0,
+  "award_floor": 1000000.0,
+  "cost_sharing": true,
+  "warnings": [
+    "No application questions were extracted from acquired source text."
+  ],
+  "output_path": "/home/mrnobody/grantbot_pro/data/nofo_blueprints/362072/application_blueprint.json"
+}

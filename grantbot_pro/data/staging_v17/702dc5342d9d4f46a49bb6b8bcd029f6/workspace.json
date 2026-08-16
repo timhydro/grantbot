@@ -1,0 +1,220 @@
+{
+  "workspace_id": "702dc5342d9d4f46a49bb6b8bcd029f6",
+  "opportunity_id": "TEST-17",
+  "title": "Reentry Housing Program",
+  "funder": "Housing Agency",
+  "stage": "READY_FOR_SUBMISSION",
+  "readiness_score": 88,
+  "competitive_score": 82,
+  "human_approved": true,
+  "approved_by": "authorized-reviewer",
+  "approved_at": "2026-08-16T07:47:46.793328+00:00",
+  "analysis": {
+    "opportunity_id": "TEST-17",
+    "promoted_at": "2026-08-16T07:47:46.775490+00:00",
+    "analysis_source": "EXISTING_V13_V15_OUTPUTS",
+    "blueprint": {
+      "opportunity_id": "TEST-17",
+      "title": "Reentry Housing Program",
+      "funder": "Housing Agency",
+      "application_questions": [
+        "Describe the community need?",
+        "Explain the project budget and match?"
+      ],
+      "submission_requirements": [
+        "Submit through official portal."
+      ],
+      "required_attachments": [
+        "Board authorization."
+      ],
+      "match_requirements": [
+        "Document required match."
+      ]
+    },
+    "competitive_match": {
+      "opportunity_id": "TEST-17",
+      "title": "Reentry Housing Program",
+      "funder": "Housing Agency",
+      "final_score": 82,
+      "priority": "HIGH",
+      "blockers": []
+    },
+    "readiness": {
+      "opportunity_id": "TEST-17",
+      "final_readiness_score": 88,
+      "missing_items": [],
+      "compliance_risks": [
+        "Verify match financing."
+      ],
+      "required_attachments": [
+        "Board authorization."
+      ],
+      "submission_requirements": [
+        "Submit through official portal."
+      ]
+    }
+  },
+  "writer_tasks": [
+    {
+      "task_id": "task_9e4237573c610bcb260b6e6c",
+      "ordinal": 1,
+      "question": "Describe the community need?",
+      "category": "NEEDS_STATEMENT",
+      "evidence_requirements": [
+        "Use current, geographically relevant, source-traceable statistics.",
+        "Distinguish Broken Growth program facts from external community data."
+      ],
+      "strategy": [
+        "Use ethos-pathos-logos without exploiting beneficiaries.",
+        "Quantify the cost of inaction only when a defensible source supports it."
+      ],
+      "status": "READY_FOR_REVIEW",
+      "version": 2,
+      "response": "Completed response for NEEDS_STATEMENT.",
+      "provenance": [
+        {
+          "source": "verified:test",
+          "note": "test evidence"
+        }
+      ],
+      "created_at": "2026-08-16T07:47:46.775611+00:00",
+      "updated_at": "2026-08-16T07:47:46.779831+00:00"
+    },
+    {
+      "task_id": "task_304a903098d9085aa418dc20",
+      "ordinal": 2,
+      "question": "Explain the project budget and match?",
+      "category": "BUDGET_FINANCE",
+      "evidence_requirements": [
+        "Use only verified or explicitly labeled projected financial figures.",
+        "Reconcile every amount with the application budget and match requirements."
+      ],
+      "strategy": [
+        "Lead with cost effectiveness and capital efficiency.",
+        "Tie requested dollars to concrete outputs and measurable outcomes."
+      ],
+      "status": "READY_FOR_REVIEW",
+      "version": 2,
+      "response": "Completed response for BUDGET_FINANCE.",
+      "provenance": [
+        {
+          "source": "verified:test",
+          "note": "test evidence"
+        }
+      ],
+      "created_at": "2026-08-16T07:47:46.775611+00:00",
+      "updated_at": "2026-08-16T07:47:46.783808+00:00"
+    }
+  ],
+  "risks": [
+    {
+      "risk_id": "risk_1e5c96e9d96e0ad7c2733b5f",
+      "workspace_id": "702dc5342d9d4f46a49bb6b8bcd029f6",
+      "risk_text": "Verify match financing.",
+      "status": "RESOLVED",
+      "resolution_note": "Verified financing documentation attached.",
+      "resolved_by": "authorized-reviewer",
+      "resolved_at": "2026-08-16T07:47:46.798412+00:00",
+      "created_at": "2026-08-16T07:47:46.776165+00:00"
+    }
+  ],
+  "checklist": [
+    {
+      "checklist_id": "check_94769ee9ced2a2bfa3bf47e6",
+      "workspace_id": "702dc5342d9d4f46a49bb6b8bcd029f6",
+      "item_type": "MATCH_REQUIREMENT",
+      "item_text": "Document required match.",
+      "status": "VERIFIED",
+      "note": "Verified against application package.",
+      "updated_by": "authorized-reviewer",
+      "created_at": "2026-08-16T07:47:46.776262+00:00",
+      "updated_at": "2026-08-16T07:47:46.801772+00:00"
+    },
+    {
+      "checklist_id": "check_d355cb4a870c02ffdb7a6244",
+      "workspace_id": "702dc5342d9d4f46a49bb6b8bcd029f6",
+      "item_type": "REQUIRED_ATTACHMENT",
+      "item_text": "Board authorization.",
+      "status": "VERIFIED",
+      "note": "Verified against application package.",
+      "updated_by": "authorized-reviewer",
+      "created_at": "2026-08-16T07:47:46.776213+00:00",
+      "updated_at": "2026-08-16T07:47:46.805085+00:00"
+    },
+    {
+      "checklist_id": "check_21830b52b11fddbdb53892cc",
+      "workspace_id": "702dc5342d9d4f46a49bb6b8bcd029f6",
+      "item_type": "SUBMISSION_REQUIREMENT",
+      "item_text": "Submit through official portal.",
+      "status": "VERIFIED",
+      "note": "Verified against application package.",
+      "updated_by": "authorized-reviewer",
+      "created_at": "2026-08-16T07:47:46.776246+00:00",
+      "updated_at": "2026-08-16T07:47:46.809020+00:00"
+    }
+  ],
+  "events": [
+    {
+      "event_id": "a487d5f3a71f41c59e96cea7ccabc213",
+      "workspace_id": "702dc5342d9d4f46a49bb6b8bcd029f6",
+      "event_type": "WORKSPACE_CREATED",
+      "from_stage": "",
+      "to_stage": "DRAFTING",
+      "actor": "system",
+      "note": "Opportunity TEST-17 staged from EXISTING_V13_V15_OUTPUTS.",
+      "created_at": "2026-08-16T07:47:46.775611+00:00"
+    },
+    {
+      "event_id": "9745c6c88869458bb3cbd1b0f1ced52f",
+      "workspace_id": "702dc5342d9d4f46a49bb6b8bcd029f6",
+      "event_type": "DRAFT_UPDATED",
+      "from_stage": "",
+      "to_stage": "DRAFTING",
+      "actor": "writer",
+      "note": "Draft task task_9e4237573c610bcb260b6e6c updated to version 2.",
+      "created_at": "2026-08-16T07:47:46.779831+00:00"
+    },
+    {
+      "event_id": "e07248d0b37f4da38c5bf98dabd70bfc",
+      "workspace_id": "702dc5342d9d4f46a49bb6b8bcd029f6",
+      "event_type": "DRAFT_UPDATED",
+      "from_stage": "",
+      "to_stage": "DRAFTING",
+      "actor": "writer",
+      "note": "Draft task task_304a903098d9085aa418dc20 updated to version 2.",
+      "created_at": "2026-08-16T07:47:46.783808+00:00"
+    },
+    {
+      "event_id": "1e51bb9325404630abe0a1688c08b831",
+      "workspace_id": "702dc5342d9d4f46a49bb6b8bcd029f6",
+      "event_type": "STAGE_TRANSITION",
+      "from_stage": "DRAFTING",
+      "to_stage": "READY_FOR_REVIEW",
+      "actor": "reviewer",
+      "note": "All narrative tasks reviewed.",
+      "created_at": "2026-08-16T07:47:46.788684+00:00"
+    },
+    {
+      "event_id": "21f2c89da386482e98b9cb9deca39cee",
+      "workspace_id": "702dc5342d9d4f46a49bb6b8bcd029f6",
+      "event_type": "STAGE_TRANSITION",
+      "from_stage": "READY_FOR_REVIEW",
+      "to_stage": "APPROVED",
+      "actor": "authorized-reviewer",
+      "note": "Human review approved the draft package.",
+      "created_at": "2026-08-16T07:47:46.793328+00:00"
+    },
+    {
+      "event_id": "d6723832accf4e78a15a3d33bc77a594",
+      "workspace_id": "702dc5342d9d4f46a49bb6b8bcd029f6",
+      "event_type": "STAGE_TRANSITION",
+      "from_stage": "APPROVED",
+      "to_stage": "READY_FOR_SUBMISSION",
+      "actor": "authorized-reviewer",
+      "note": "All V17 safety gates satisfied.",
+      "created_at": "2026-08-16T07:47:46.812927+00:00"
+    }
+  ],
+  "created_at": "2026-08-16T07:47:46.775611+00:00",
+  "updated_at": "2026-08-16T07:47:46.812927+00:00"
+}

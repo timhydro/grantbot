@@ -1,0 +1,32 @@
+{
+  "opportunity_id": "361999",
+  "title": "FY 2026 Continuum of Care Competition and Youth Homelessness Demonstration Program Grants NOFO",
+  "funder": "Department of Housing and Urban Development",
+  "applicant_role": {
+    "role": "DIRECT_APPLICANT",
+    "direct_applicant": true,
+    "partner_candidate": true,
+    "verification_required": false,
+    "blockers": [],
+    "rationale": [
+      "Nonprofit eligibility is explicitly listed."
+    ]
+  },
+  "mission_fit_score": 45,
+  "readiness_score": 100,
+  "competitiveness_score": 70,
+  "burden_score": 40,
+  "final_score": 50,
+  "priority": "LOW",
+  "strengths": [
+    "Application questions are available for writer handoff.",
+    "Application requirements have been extracted.",
+    "Scoring criteria are available for competitive targeting.",
+    "Broken Growth is classified as a direct applicant."
+  ],
+  "weaknesses": [
+    "Match/cost-sharing increases application burden."
+  ],
+  "blockers": [],
+  "output_path": "/home/mrnobody/grantbot_pro/data/matching/361999/competitive_match.json"
+}
