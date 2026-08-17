@@ -31,7 +31,7 @@ jobs:
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
 
-      - name: Verify unified routes, RBAC, packet integrity, requirements, budgets, and risk intelligence
+      - name: Verify unified routes, RBAC, packet integrity, requirements, budgets, risk, and discovery
         run: |
           python - <<'PY'
           from grantbot.app import app
@@ -66,6 +66,12 @@ jobs:
               "/master/risk/{workspace_id}/assess",
               "/master/risk/{workspace_id}/latest",
               "/master/risk/{workspace_id}/history",
+              "/master/discovery/plan",
+              "/master/discovery/run",
+              "/master/discovery/health",
+              "/master/discovery/campaigns",
+              "/master/discovery/campaigns/{campaign_id}",
+              "/master/discovery/sources/{source_key}/reset",
           }
           missing = required - paths
           if missing:
@@ -92,6 +98,12 @@ jobs:
               ("/master/risk/{workspace_id}/assess", "post"),
               ("/master/risk/{workspace_id}/latest", "get"),
               ("/master/risk/{workspace_id}/history", "get"),
+              ("/master/discovery/plan", "post"),
+              ("/master/discovery/run", "post"),
+              ("/master/discovery/health", "get"),
+              ("/master/discovery/campaigns", "get"),
+              ("/master/discovery/campaigns/{campaign_id}", "get"),
+              ("/master/discovery/sources/{source_key}/reset", "post"),
           )
           for path, method in protected_paths:
               if not schema["paths"][path][method].get("security"):
@@ -100,7 +112,7 @@ jobs:
                   )
 
           print(
-              "Unified route/RBAC/packet/requirement/budget/risk verification passed: "
+              "Unified route/RBAC/packet/requirement/budget/risk/discovery verification passed: "
               f"{len(paths)} routes"
           )
           PY
