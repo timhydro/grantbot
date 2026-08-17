@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from grantbot.core.database import connection
+from grantbot.core.database import connection, initialize_database
 
 
 FUNDING_SCHEMA = """
@@ -189,7 +189,6 @@ ON opportunity_tags(tag);
 
 
 def initialize_funding_schema() -> None:
+    initialize_database()
     with connection() as conn:
-        conn.executescript(
-            FUNDING_SCHEMA
-        )
+        conn.executescript(FUNDING_SCHEMA)
