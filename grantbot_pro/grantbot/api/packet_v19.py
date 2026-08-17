@@ -5,7 +5,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
-from grantbot.packaging.packet_v19 import (
+from grantbot.packaging.packet_guard_v19 import (
     approve_packet,
     build_packet,
     controlled_upload_path,
@@ -13,6 +13,7 @@ from grantbot.packaging.packet_v19 import (
     get_packet,
     register_attachment,
     verify_attachment,
+    verify_packet_integrity,
 )
 from grantbot.security.auth import (
     ADMIN,
@@ -56,6 +57,18 @@ def build(
         raise _error(exc) from exc
 
 
+@router.get("/{packet_id}/integrity")
+def integrity(
+    packet_id: str,
+    principal: Principal = Depends(require_roles(*READ_ROLES)),
+) -> dict[str, Any]:
+    del principal
+    try:
+        return verify_packet_integrity(packet_id)
+    except Exception as exc:
+        raise _error(exc) from exc
+
+
 @router.get("/{packet_id}")
 def get(
     packet_id: str,
@@ -80,7 +93,10 @@ async def upload(
     del principal
     target: Path | None = None
     try:
-        target = controlled_upload_path(workspace_id, file.filename or logical_name)
+        target = controlled_upload_path(
+            workspace_id,
+            file.filename or logical_name,
+        )
         total = 0
         with target.open("wb") as handle:
             while True:
@@ -115,7 +131,11 @@ def verify(
 ) -> dict[str, Any]:
     del actor
     try:
-        return verify_attachment(packet_id, attachment_id, actor=principal.actor)
+        return verify_attachment(
+            packet_id,
+            attachment_id,
+            actor=principal.actor,
+        )
     except Exception as exc:
         raise _error(exc) from exc
 
@@ -125,11 +145,17 @@ def approve(
     packet_id: str,
     actor: str = Form(default=""),
     note: str = Form(),
-    principal: Principal = Depends(require_roles(ADMIN, AUTHORIZED_REPRESENTATIVE)),
+    principal: Principal = Depends(
+        require_roles(ADMIN, AUTHORIZED_REPRESENTATIVE)
+    ),
 ) -> dict[str, Any]:
     del actor
     try:
-        return approve_packet(packet_id, actor=principal.actor, note=note)
+        return approve_packet(
+            packet_id,
+            actor=principal.actor,
+            note=note,
+        )
     except Exception as exc:
         raise _error(exc) from exc
 
@@ -138,10 +164,15 @@ def approve(
 def seal(
     packet_id: str,
     actor: str = Form(default=""),
-    principal: Principal = Depends(require_roles(ADMIN, AUTHORIZED_REPRESENTATIVE)),
+    principal: Principal = Depends(
+        require_roles(ADMIN, AUTHORIZED_REPRESENTATIVE)
+    ),
 ) -> dict[str, Any]:
     del actor
     try:
-        return finalize_packet(packet_id, actor=principal.actor)
+        return finalize_packet(
+            packet_id,
+            actor=principal.actor,
+        )
     except Exception as exc:
         raise _error(exc) from exc
