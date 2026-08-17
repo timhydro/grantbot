@@ -31,7 +31,7 @@ jobs:
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
 
-      - name: Verify unified routes, RBAC, and packet integrity API
+      - name: Verify unified routes, RBAC, packet integrity, and requirement compliance
         run: |
           python - <<'PY'
           from grantbot.app import app
@@ -54,6 +54,9 @@ jobs:
               "/master/security/status",
               "/master/security/keys",
               "/master/security/keys/{key_id}",
+              "/master/requirements/sync/{workspace_id}",
+              "/master/requirements/status/{workspace_id}",
+              "/master/requirements/status/{workspace_id}/{requirement_id}",
           }
           missing = required - paths
           if missing:
@@ -68,6 +71,12 @@ jobs:
               ("/v19/packet/{packet_id}/integrity", "get"),
               ("/v19/packet/{packet_id}/approve", "post"),
               ("/v19/packet/{packet_id}/seal", "post"),
+              ("/master/requirements/sync/{workspace_id}", "post"),
+              ("/master/requirements/status/{workspace_id}", "get"),
+              (
+                  "/master/requirements/status/{workspace_id}/{requirement_id}",
+                  "put",
+              ),
           )
           for path, method in protected_paths:
               if not schema["paths"][path][method].get("security"):
@@ -76,7 +85,7 @@ jobs:
                   )
 
           print(
-              "Unified route/RBAC/packet integrity verification passed: "
+              "Unified route/RBAC/packet/requirement verification passed: "
               f"{len(paths)} routes"
           )
           PY
