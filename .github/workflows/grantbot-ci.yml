@@ -31,16 +31,19 @@ jobs:
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
 
-      - name: Verify unified routes and RBAC declarations
+      - name: Verify unified routes, RBAC, and packet integrity API
         run: |
           python - <<'PY'
           from grantbot.app import app
-          paths = set(app.openapi().get("paths", {}))
+
+          schema = app.openapi()
+          paths = set(schema.get("paths", {}))
           required = {
               "/v16/queue/health",
               "/v17/staging/health",
               "/v18/writer/{workspace_id}/{task_id}/draft",
               "/v19/packet/build/{workspace_id}",
+              "/v19/packet/{packet_id}/integrity",
               "/master/health",
               "/master/system/versions",
               "/master/budget/calculate",
@@ -55,12 +58,25 @@ jobs:
           missing = required - paths
           if missing:
               raise SystemExit(f"Missing unified routes: {sorted(missing)}")
-          schema = app.openapi()
+
           security_schemes = schema.get("components", {}).get("securitySchemes", {})
           if not security_schemes:
               raise SystemExit("No FastAPI security scheme declared")
-          protected = schema["paths"]["/master/security/status"]["get"].get("security")
-          if not protected:
-              raise SystemExit("Security management route lacks authentication declaration")
-          print(f"Unified route/RBAC verification passed: {len(paths)} routes")
+
+          protected_paths = (
+              ("/master/security/status", "get"),
+              ("/v19/packet/{packet_id}/integrity", "get"),
+              ("/v19/packet/{packet_id}/approve", "post"),
+              ("/v19/packet/{packet_id}/seal", "post"),
+          )
+          for path, method in protected_paths:
+              if not schema["paths"][path][method].get("security"):
+                  raise SystemExit(
+                      f"Protected route lacks authentication declaration: {method.upper()} {path}"
+                  )
+
+          print(
+              "Unified route/RBAC/packet integrity verification passed: "
+              f"{len(paths)} routes"
+          )
           PY
