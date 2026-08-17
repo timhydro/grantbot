@@ -89,7 +89,17 @@ class RiskIntelligenceTests(unittest.TestCase):
         calculated = engine.calculate_risk(dict(self.base))
         evaluated = dict(calculated)
         evaluated["inputs"] = dict(self.base)
-        with patch.object(engine, "evaluate_workspace_risk", return_value=evaluated):
+
+        def fresh_evaluation(_: str) -> dict:
+            payload = dict(evaluated)
+            payload["inputs"] = dict(self.base)
+            return payload
+
+        with patch.object(
+            engine,
+            "evaluate_workspace_risk",
+            side_effect=fresh_evaluation,
+        ):
             first = engine.assess_workspace_risk("ws-risk", actor="reviewer@test")
             second = engine.assess_workspace_risk("ws-risk", actor="reviewer@test")
         self.assertEqual(first.version, 1)
