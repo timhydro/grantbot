@@ -78,7 +78,7 @@ class PostAwardTests(unittest.TestCase):
         )
         exposure = service.financial_exposure(
             award_id,
-            as_of="2026-04-01",
+            as_of="2026-04-02",
         )
         self.assertEqual(exposure["spent"], 60000.0)
         self.assertGreater(exposure["run_rate_projected_total_spend"], 120000)
