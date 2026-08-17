@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, dataclass
 from typing import Any
 
@@ -75,6 +76,40 @@ def _block(facts: list[dict[str, Any]]) -> str:
     )
 
 
+def _learning_examples_block(examples: list[dict[str, Any]]) -> str:
+    if not examples:
+        return "(none)"
+    blocks: list[str] = []
+    for index, item in enumerate(examples[:3], start=1):
+        text = str(item.get("final_text", "")).strip()
+        if not text:
+            continue
+        if len(text) > 6000:
+            text = text[:6000].rstrip() + " [truncated]"
+        blocks.append(
+            f"REFERENCE {index}\n"
+            f"Section: {item.get('section_type', 'general')}\n"
+            f"Reviewer score: {item.get('reviewer_score', 'unknown')}\n"
+            f"Text:\n{text}"
+        )
+    return "\n\n".join(blocks) if blocks else "(none)"
+
+
+def _learning_profile_block(profile: dict[str, Any] | None) -> str:
+    if not profile:
+        return "(none)"
+    allowed = {
+        "approved_count": profile.get("approved_count"),
+        "average_approved_score": profile.get("average_approved_score"),
+        "average_final_to_source_word_ratio": profile.get(
+            "average_final_to_source_word_ratio"
+        ),
+        "common_edit_tags": profile.get("common_edit_tags", []),
+        "dimension_averages": profile.get("dimension_averages", {}),
+    }
+    return json.dumps(allowed, ensure_ascii=False, sort_keys=True)
+
+
 def _system() -> str:
     return """
 You are the senior grant strategist for BrokenGrowthMinistries with doctoral-level mastery of nonprofit grant strategy, housing/reentry programs, workforce development, evaluation, and persuasive professional writing.
@@ -87,6 +122,9 @@ VERIFIED and APPROVED facts may be stated as facts.
 DRAFT facts are planning context only and must remain prospective.
 MISSING facts must never be guessed, estimated, rounded, or fabricated.
 Never invent statistics, budgets, outcomes, partnerships, beneficiary counts, housing units, wages, dates, certifications, or success rates.
+
+Human-approved reference examples are STYLE AND STRUCTURE GUIDANCE ONLY. They are never factual evidence for the current application. Never copy a name, number, outcome, partnership, date, location, budget, or organization-specific claim from a reference example unless that same claim is independently supported in the current TRUSTED FACTS or PLANNING CONTEXT.
+
 Return only the final grant narrative.
 """.strip()
 
@@ -101,6 +139,8 @@ def write_answer(
     priorities: list[str] | None = None,
     requirements: list[str] | None = None,
     max_words: int | None = None,
+    approved_examples: list[dict[str, Any]] | None = None,
+    learning_profile: dict[str, Any] | None = None,
     provider: OllamaProvider | None = None,
 ) -> WriterResult:
     if not question.strip():
@@ -129,6 +169,7 @@ def write_answer(
 
     priorities = [p.strip() for p in (priorities or []) if p.strip()]
     requirements = [r.strip() for r in (requirements or []) if r.strip()]
+    examples = list(approved_examples or [])[:3]
 
     prompt = f"""
 GRANT: {grant_title or "(not supplied)"}
@@ -152,9 +193,15 @@ PLANNING CONTEXT:
 KNOWN MISSING:
 {_block(missing)}
 
+HUMAN-APPROVED STYLE REFERENCES — STYLE/STRUCTURE ONLY, NEVER FACTUAL EVIDENCE:
+{_learning_examples_block(examples)}
+
+HUMAN REVIEW PREFERENCE PROFILE — STYLE GUIDANCE ONLY:
+{_learning_profile_block(learning_profile)}
+
 MAX WORDS: {max_words if max_words is not None else "not specified"}
 
-Write only the final submission-quality narrative.
+Write only the final submission-quality narrative. Use the reference material only to learn presentation patterns. Every factual claim must be grounded in the current facts above.
 """.strip()
 
     draft = active.generate(prompt, system=_system(), temperature=0.3)

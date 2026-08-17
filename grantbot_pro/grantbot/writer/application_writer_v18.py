@@ -5,6 +5,11 @@ from typing import Any
 from grantbot.claims.checker import check_claims
 from grantbot.evidence.repository import list_requirements
 from grantbot.knowledge.canonical import migrate_legacy_facts
+from grantbot.learning.review_learning import (
+    approved_examples,
+    infer_funder_archetype,
+    learning_profile,
+)
 from grantbot.master.database import record_feedback, save_revision
 from grantbot.retrieval.hybrid import rank_facts
 from grantbot.review.staging_v17 import get_workspace, save_draft
@@ -129,15 +134,30 @@ def draft_task(
         )
     )
 
+    section = CATEGORY_TO_SECTION.get(task["category"], "general")
+    funder_archetype = infer_funder_archetype(workspace)
+    examples = approved_examples(
+        query=str(task["question"]),
+        section_type=section,
+        funder_archetype=funder_archetype,
+        limit=3,
+    )
+    profile = learning_profile(
+        section_type=section,
+        funder_archetype=funder_archetype,
+    )
+
     result = write_answer(
         question=task["question"],
-        section=CATEGORY_TO_SECTION.get(task["category"], "general"),
+        section=section,
         facts=facts,
         grant_title=workspace.get("title", ""),
         funder=workspace.get("funder", ""),
         priorities=priorities,
         requirements=requirements,
         max_words=max_words,
+        approved_examples=examples,
+        learning_profile=profile,
     )
     if not result.draft:
         return {
@@ -172,6 +192,16 @@ def draft_task(
         }
         for fact in facts
     ]
+    if examples:
+        provenance.append(
+            {
+                "source": "human-approved-style-library",
+                "note": (
+                    f"{len(examples)} human-approved reference example(s) used "
+                    "for style/structure only; not factual evidence"
+                ),
+            }
+        )
     save_draft(
         workspace_id,
         task_id,
@@ -192,6 +222,12 @@ def draft_task(
         "missing_information": result.missing_information,
         "provider": result.provider,
         "model": result.model,
+        "learning": {
+            "approved_example_count": len(examples),
+            "funder_archetype": funder_archetype,
+            "profile": profile,
+            "policy": "Examples influence style and structure only; current facts remain the sole factual evidence source.",
+        },
     }
 
 
@@ -241,7 +277,7 @@ def submit_feedback(
             provenance=[
                 {
                     "source": f"human:{reviewer.strip()}",
-                    "note": "Human-reviewed V18 revision",
+                    "note": "Legacy V18 feedback; not automatically admitted to V21 learning examples",
                 }
             ],
         )

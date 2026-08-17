@@ -31,7 +31,7 @@ jobs:
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
 
-      - name: Verify unified routes, RBAC, packet integrity, requirements, budgets, risk, and discovery
+      - name: Verify unified routes, RBAC, packet integrity, requirements, budgets, risk, discovery, and review learning
         run: |
           python - <<'PY'
           from grantbot.app import app
@@ -72,6 +72,11 @@ jobs:
               "/master/discovery/campaigns",
               "/master/discovery/campaigns/{campaign_id}",
               "/master/discovery/sources/{source_key}/reset",
+              "/master/review-learning/rubric",
+              "/master/review-learning/{workspace_id}/{task_id}/{revision_id}",
+              "/master/review-learning/{workspace_id}/history",
+              "/master/review-learning/learning/examples",
+              "/master/review-learning/learning/profile",
           }
           missing = required - paths
           if missing:
@@ -104,6 +109,11 @@ jobs:
               ("/master/discovery/campaigns", "get"),
               ("/master/discovery/campaigns/{campaign_id}", "get"),
               ("/master/discovery/sources/{source_key}/reset", "post"),
+              ("/master/review-learning/rubric", "get"),
+              ("/master/review-learning/{workspace_id}/{task_id}/{revision_id}", "post"),
+              ("/master/review-learning/{workspace_id}/history", "get"),
+              ("/master/review-learning/learning/examples", "get"),
+              ("/master/review-learning/learning/profile", "get"),
           )
           for path, method in protected_paths:
               if not schema["paths"][path][method].get("security"):
@@ -112,7 +122,7 @@ jobs:
                   )
 
           print(
-              "Unified route/RBAC/packet/requirement/budget/risk/discovery verification passed: "
+              "Unified route/RBAC/packet/requirement/budget/risk/discovery/review-learning verification passed: "
               f"{len(paths)} routes"
           )
           PY
