@@ -9,7 +9,7 @@ from grantbot.compliance.requirements import requirement_summary
 from grantbot.discovery.orchestrator import discovery_health
 from grantbot.learning.review_learning import learning_profile
 from grantbot.postaward.service import award_dashboard, list_awards
-from grantbot.review.staging_v17 import list_workspaces
+from grantbot.review.staging_v17 import get_workspace, list_workspaces
 from grantbot.risk.engine import latest_risk
 
 
@@ -57,7 +57,6 @@ def _date_candidate(value: Any) -> tuple[str, date | None]:
 def _application_deadline(workspace: dict[str, Any]) -> dict[str, Any] | None:
     analysis = workspace.get("analysis") or {}
     blueprint = analysis.get("blueprint") or {}
-    sources = [blueprint, analysis]
     keys = (
         "deadline",
         "close_date",
@@ -66,7 +65,7 @@ def _application_deadline(workspace: dict[str, Any]) -> dict[str, Any] | None:
         "submission_deadline",
         "application_deadline",
     )
-    for source in sources:
+    for source in (blueprint, analysis):
         if not isinstance(source, dict):
             continue
         for key in keys:
@@ -96,23 +95,14 @@ def _safe_call(
         return default
 
 
-def _application_row(
-    workspace: dict[str, Any],
-    *,
-    today: date,
-) -> dict[str, Any]:
+def _application_row(workspace: dict[str, Any], *, today: date) -> dict[str, Any]:
     workspace_id = _clean(workspace.get("workspace_id"))
     errors: list[str] = []
     requirement_gate = _safe_call(
         requirement_summary,
         workspace_id,
         sync=False,
-        default={
-            "requirement_count": 0,
-            "blocking_count": 0,
-            "blockers": [],
-            "ready": False,
-        },
+        default={"requirement_count": 0, "blocking_count": 0, "blockers": []},
         errors=errors,
         label="requirement_summary",
     )
@@ -156,7 +146,6 @@ def _application_row(
         not in {"READY_FOR_REVIEW", "APPROVED"}
         or not _clean(item.get("response"))
     ]
-
     budget_blockers = [
         _clean(item) for item in budget_gate.get("blockers", []) if _clean(item)
     ]
@@ -171,10 +160,10 @@ def _application_row(
 
     latest_budget = budget_gate.get("latest_budget")
     calculation: dict[str, Any] = {}
-    if isinstance(latest_budget, dict):
-        candidate = latest_budget.get("calculation")
-        if isinstance(candidate, dict):
-            calculation = candidate
+    if isinstance(latest_budget, dict) and isinstance(
+        latest_budget.get("calculation"), dict
+    ):
+        calculation = dict(latest_budget["calculation"])
     grant_request = calculation.get("grant_request")
     requested_amount = (
         float(grant_request)
@@ -261,11 +250,20 @@ def application_portfolio(
 ) -> dict[str, Any]:
     today = _as_of(as_of)
     safe_limit = min(max(int(limit), 1), 1000)
-    workspaces = list_workspaces()
-    rows = [
-        _application_row(workspace, today=today)
-        for workspace in workspaces[:safe_limit]
-    ]
+    summaries = list_workspaces()[:safe_limit]
+    rows: list[dict[str, Any]] = []
+    load_errors: list[str] = []
+    for summary in summaries:
+        workspace_id = _clean(summary.get("workspace_id"))
+        try:
+            workspace = get_workspace(workspace_id)
+        except Exception as exc:
+            load_errors.append(
+                f"{workspace_id or 'unknown'}: {type(exc).__name__}: {exc}"
+            )
+            continue
+        rows.append(_application_row(workspace, today=today))
+
     stage_counts = Counter(row["stage"] or "UNKNOWN" for row in rows)
     risk_counts = Counter(
         str((row.get("risk") or {}).get("risk_band") or "NOT_ASSESSED")
@@ -275,14 +273,6 @@ def application_portfolio(
         str((row.get("risk") or {}).get("decision") or "NOT_ASSESSED")
         for row in rows
     )
-    approved_request_total = round(
-        sum(
-            float(row["requested_amount_financially_approved"])
-            for row in rows
-            if row["requested_amount_financially_approved"] is not None
-        ),
-        2,
-    )
     latest_request_total = round(
         sum(
             float(row["latest_requested_amount"])
@@ -291,9 +281,19 @@ def application_portfolio(
         ),
         2,
     )
+    approved_request_total = round(
+        sum(
+            float(row["requested_amount_financially_approved"])
+            for row in rows
+            if row["requested_amount_financially_approved"] is not None
+        ),
+        2,
+    )
     return {
         "as_of": today.isoformat(),
         "application_count": len(rows),
+        "workspace_load_error_count": len(load_errors),
+        "workspace_load_errors": load_errors,
         "stage_counts": dict(stage_counts),
         "risk_band_counts": dict(risk_counts),
         "risk_decision_counts": dict(decision_counts),
@@ -385,11 +385,8 @@ def award_portfolio(
 ) -> dict[str, Any]:
     today = _as_of(as_of)
     safe_limit = min(max(int(limit), 1), 1000)
-    awards = list_awards()
-    rows = [
-        _award_row(award, today=today)
-        for award in awards[:safe_limit]
-    ]
+    awards = list_awards()[:safe_limit]
+    rows = [_award_row(award, today=today) for award in awards]
     status_counts = Counter(row["status"] or "UNKNOWN" for row in rows)
     financial_band_counts = Counter(row["financial_risk_band"] for row in rows)
     active = [row for row in rows if row["status"] == "ACTIVE"]
@@ -435,7 +432,6 @@ def deadline_portfolio(
     today = _as_of(as_of)
     horizon = min(max(int(days), 0), 3650)
     items: list[dict[str, Any]] = []
-
     applications = application_portfolio(as_of=today.isoformat(), limit=1000)
     for row in applications["applications"]:
         deadline = row.get("deadline") or {}
@@ -462,11 +458,9 @@ def deadline_portfolio(
             }
         )
 
-    awards = list_awards()
-    for award in awards:
+    for award in list_awards():
         dashboard = award_dashboard(
-            str(award["award_id"]),
-            as_of=today.isoformat(),
+            str(award["award_id"]), as_of=today.isoformat()
         )
         for report in dashboard.get("reports", []):
             if report.get("status") in FINAL_REPORT_STATUSES:
@@ -550,22 +544,22 @@ def portfolio_risks(*, as_of: str | None = None) -> dict[str, Any]:
     today = _as_of(as_of)
     applications = application_portfolio(as_of=today.isoformat(), limit=1000)
     awards = award_portfolio(as_of=today.isoformat(), limit=1000)
-    risk_items: list[dict[str, Any]] = []
+    items: list[dict[str, Any]] = []
     for row in applications["applications"]:
         risk = row.get("risk") or {}
-        risk_band = str(risk.get("risk_band") or "NOT_ASSESSED")
+        band = str(risk.get("risk_band") or "NOT_ASSESSED")
         if (
-            risk_band in {"ELEVATED", "HIGH", "CRITICAL"}
+            band in {"ELEVATED", "HIGH", "CRITICAL"}
             or row["material_blocker_count"] > 0
             or row["deadline_state"] in {"PAST_DUE", "CRITICAL"}
             or row["risk_assessment_state"] == "NOT_ASSESSED"
         ):
-            risk_items.append(
+            items.append(
                 {
                     "risk_type": "APPLICATION",
                     "id": row["workspace_id"],
                     "title": row["title"],
-                    "band": risk_band,
+                    "band": band,
                     "score": risk.get("risk_index"),
                     "decision": risk.get("decision") or "NOT_ASSESSED",
                     "material_blocker_count": row["material_blocker_count"],
@@ -573,12 +567,12 @@ def portfolio_risks(*, as_of: str | None = None) -> dict[str, Any]:
                 }
             )
     for row in awards["awards"]:
+        overdue = row["overdue_report_count"] + row["overdue_task_count"]
         if (
             row["financial_risk_band"] in {"WATCH", "ELEVATED", "HIGH"}
-            or row["overdue_report_count"] > 0
-            or row["overdue_task_count"] > 0
+            or overdue > 0
         ):
-            risk_items.append(
+            items.append(
                 {
                     "risk_type": "AWARD",
                     "id": row["award_id"],
@@ -586,18 +580,19 @@ def portfolio_risks(*, as_of: str | None = None) -> dict[str, Any]:
                     "band": row["financial_risk_band"],
                     "score": row["financial_risk_score"],
                     "decision": "MANAGE",
-                    "material_blocker_count": (
-                        row["overdue_report_count"] + row["overdue_task_count"]
-                    ),
-                    "deadline_state": (
-                        "PAST_DUE"
-                        if row["overdue_report_count"] + row["overdue_task_count"] > 0
-                        else "OPEN"
-                    ),
+                    "material_blocker_count": overdue,
+                    "deadline_state": "PAST_DUE" if overdue else "OPEN",
                 }
             )
-    priority = {"CRITICAL": 5, "HIGH": 4, "ELEVATED": 3, "WATCH": 2, "LOW": 1}
-    risk_items.sort(
+    priority = {
+        "CRITICAL": 6,
+        "HIGH": 5,
+        "ELEVATED": 4,
+        "NOT_ASSESSED": 3,
+        "WATCH": 2,
+        "LOW": 1,
+    }
+    items.sort(
         key=lambda item: (
             priority.get(str(item["band"]), 3),
             int(item.get("material_blocker_count", 0)),
@@ -607,8 +602,8 @@ def portfolio_risks(*, as_of: str | None = None) -> dict[str, Any]:
     )
     return {
         "as_of": today.isoformat(),
-        "risk_item_count": len(risk_items),
-        "risks": risk_items,
+        "risk_item_count": len(items),
+        "risks": items,
         "methodology_note": (
             "This list combines deterministic application controls and recorded "
             "post-award financial/compliance signals. It is not an award-probability model."
@@ -621,9 +616,7 @@ def portfolio_summary(*, as_of: str | None = None) -> dict[str, Any]:
     applications = application_portfolio(as_of=today.isoformat(), limit=1000)
     awards = award_portfolio(as_of=today.isoformat(), limit=1000)
     deadlines = deadline_portfolio(
-        as_of=today.isoformat(),
-        days=90,
-        include_past_due=True,
+        as_of=today.isoformat(), days=90, include_past_due=True
     )
     discovery_errors: list[str] = []
     discovery = _safe_call(
@@ -651,7 +644,6 @@ def portfolio_summary(*, as_of: str | None = None) -> dict[str, Any]:
         label="learning_profile",
     )
     campaigns = list(discovery.get("campaigns", []) or [])
-    latest_campaign = campaigns[0] if campaigns else None
     return {
         "as_of": today.isoformat(),
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -697,7 +689,7 @@ def portfolio_summary(*, as_of: str | None = None) -> dict[str, Any]:
             "circuit_open_count": int(
                 discovery.get("circuit_open_count", 0) or 0
             ),
-            "latest_campaign": latest_campaign,
+            "latest_campaign": campaigns[0] if campaigns else None,
             "diagnostics": discovery_errors,
         },
         "review_learning": {
