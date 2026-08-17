@@ -2,18 +2,39 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from grantbot.budget.engine import calculate_budget
 from grantbot.evidence.repository import ingest_document, list_requirements
 from grantbot.knowledge.canonical import current_facts, set_fact
-from grantbot.retrieval.hybrid import rank_facts
 from grantbot.master.service import health, learning_profile, submission_gate, system_versions
 from grantbot.outcomes.logic_model import validate_logic_model
+from grantbot.retrieval.hybrid import rank_facts
+from grantbot.security.auth import (
+    ADMIN,
+    AUTHORIZED_REPRESENTATIVE,
+    FINANCIAL_REVIEWER,
+    GRANT_WRITER,
+    REVIEWER,
+    Principal,
+    create_api_key,
+    list_api_keys,
+    require_roles,
+    revoke_api_key,
+    security_status,
+)
 
 
 router = APIRouter(prefix="/master", tags=["GrantBot Unified Master"])
+
+READ_ROLES = (
+    ADMIN,
+    GRANT_WRITER,
+    REVIEWER,
+    FINANCIAL_REVIEWER,
+    AUTHORIZED_REPRESENTATIVE,
+)
 
 
 class BudgetItem(BaseModel):
@@ -48,7 +69,7 @@ class CanonicalFactRequest(BaseModel):
     source_type: str = Field(default="", max_length=100)
     confidence: float = Field(default=1.0, ge=0, le=1)
     notes: str = Field(default="", max_length=5000)
-    actor: str = Field(default="user", max_length=200)
+    actor: str = Field(default="", max_length=200)
 
 
 class DocumentRequest(BaseModel):
@@ -66,6 +87,11 @@ class RetrievalRequest(BaseModel):
     include_unverified: bool = True
 
 
+class CreateKeyRequest(BaseModel):
+    label: str = Field(min_length=1, max_length=200)
+    role: str = Field(min_length=1, max_length=50)
+
+
 @router.get("/health")
 def master_health() -> dict[str, Any]:
     return health()
@@ -77,7 +103,11 @@ def versions() -> dict[str, Any]:
 
 
 @router.get("/workspaces/{workspace_id}/gate")
-def gate(workspace_id: str) -> dict[str, Any]:
+def gate(
+    workspace_id: str,
+    principal: Principal = Depends(require_roles(*READ_ROLES)),
+) -> dict[str, Any]:
+    del principal
     try:
         return submission_gate(workspace_id)
     except FileNotFoundError as exc:
@@ -87,7 +117,13 @@ def gate(workspace_id: str) -> dict[str, Any]:
 
 
 @router.post("/budget/calculate")
-def budget(payload: BudgetRequest) -> dict[str, Any]:
+def budget(
+    payload: BudgetRequest,
+    principal: Principal = Depends(
+        require_roles(ADMIN, GRANT_WRITER, FINANCIAL_REVIEWER)
+    ),
+) -> dict[str, Any]:
+    del principal
     try:
         return calculate_budget(
             items=[item.model_dump() for item in payload.items],
@@ -103,30 +139,49 @@ def budget(payload: BudgetRequest) -> dict[str, Any]:
 
 
 @router.post("/logic-model/validate")
-def logic_model(payload: LogicModelRequest) -> dict[str, Any]:
+def logic_model(
+    payload: LogicModelRequest,
+    principal: Principal = Depends(require_roles(ADMIN, GRANT_WRITER, REVIEWER)),
+) -> dict[str, Any]:
+    del principal
     return validate_logic_model(payload.model)
 
 
 @router.get("/learning/profile")
-def profile() -> dict[str, Any]:
+def profile(
+    principal: Principal = Depends(require_roles(ADMIN, REVIEWER)),
+) -> dict[str, Any]:
+    del principal
     return learning_profile()
 
 
 @router.post("/facts")
-def create_canonical_fact(payload: CanonicalFactRequest) -> dict[str, Any]:
+def create_canonical_fact(
+    payload: CanonicalFactRequest,
+    principal: Principal = Depends(require_roles(ADMIN, REVIEWER)),
+) -> dict[str, Any]:
     try:
-        return set_fact(**payload.model_dump())
+        data = payload.model_dump()
+        data["actor"] = principal.actor
+        return set_fact(**data)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.get("/facts")
-def list_canonical_facts() -> list[dict[str, Any]]:
+def list_canonical_facts(
+    principal: Principal = Depends(require_roles(*READ_ROLES)),
+) -> list[dict[str, Any]]:
+    del principal
     return current_facts()
 
 
 @router.post("/documents/analyze")
-def analyze_document(payload: DocumentRequest) -> dict[str, Any]:
+def analyze_document(
+    payload: DocumentRequest,
+    principal: Principal = Depends(require_roles(ADMIN, GRANT_WRITER)),
+) -> dict[str, Any]:
+    del principal
     try:
         return ingest_document(**payload.model_dump())
     except ValueError as exc:
@@ -138,7 +193,9 @@ def requirements(
     opportunity_id: str,
     authoritative_only: bool = True,
     category: str | None = None,
+    principal: Principal = Depends(require_roles(*READ_ROLES)),
 ) -> list[dict[str, Any]]:
+    del principal
     try:
         return list_requirements(
             opportunity_id=opportunity_id,
@@ -150,9 +207,56 @@ def requirements(
 
 
 @router.post("/retrieval/facts")
-def retrieve_facts(payload: RetrievalRequest) -> list[dict[str, Any]]:
+def retrieve_facts(
+    payload: RetrievalRequest,
+    principal: Principal = Depends(require_roles(*READ_ROLES)),
+) -> list[dict[str, Any]]:
+    del principal
     return rank_facts(
         payload.query,
         limit=payload.limit,
         include_unverified=payload.include_unverified,
     )
+
+
+@router.get("/security/status")
+def get_security_status(
+    principal: Principal = Depends(require_roles(ADMIN)),
+) -> dict[str, Any]:
+    del principal
+    return security_status()
+
+
+@router.get("/security/keys")
+def get_security_keys(
+    principal: Principal = Depends(require_roles(ADMIN)),
+) -> list[dict[str, Any]]:
+    del principal
+    return list_api_keys()
+
+
+@router.post("/security/keys")
+def issue_security_key(
+    payload: CreateKeyRequest,
+    principal: Principal = Depends(require_roles(ADMIN)),
+) -> dict[str, Any]:
+    del principal
+    try:
+        return create_api_key(label=payload.label, role=payload.role)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.delete("/security/keys/{key_id}")
+def revoke_security_key(
+    key_id: str,
+    principal: Principal = Depends(require_roles(ADMIN)),
+) -> dict[str, Any]:
+    try:
+        return revoke_api_key(key_id, actor=principal)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc

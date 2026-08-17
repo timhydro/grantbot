@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from grantbot.security.auth import ADMIN, GRANT_WRITER, REVIEWER, Principal, require_roles
 from grantbot.writer.application_writer_v18 import draft_task, submit_feedback
 
 
@@ -21,7 +22,7 @@ class FeedbackRequest(BaseModel):
     after_text: str = Field(default="", max_length=200000)
     accepted: bool = False
     edit_tags: list[str] = Field(default_factory=list, max_length=50)
-    reviewer: str = Field(min_length=1, max_length=200)
+    reviewer: str = Field(default="", max_length=200)
     reviewer_score: float | None = Field(default=None, ge=0, le=100)
     outcome: str = Field(default="", max_length=200)
     award_amount: float | None = Field(default=None, ge=0)
@@ -38,7 +39,13 @@ def _error(exc: Exception) -> HTTPException:
 
 
 @router.post("/{workspace_id}/{task_id}/draft")
-def draft(workspace_id: str, task_id: str, payload: DraftRequest) -> dict[str, Any]:
+def draft(
+    workspace_id: str,
+    task_id: str,
+    payload: DraftRequest,
+    principal: Principal = Depends(require_roles(ADMIN, GRANT_WRITER)),
+) -> dict[str, Any]:
+    del principal
     try:
         return draft_task(workspace_id, task_id, max_words=payload.max_words)
     except Exception as exc:
@@ -46,7 +53,12 @@ def draft(workspace_id: str, task_id: str, payload: DraftRequest) -> dict[str, A
 
 
 @router.post("/{workspace_id}/{task_id}/feedback")
-def feedback(workspace_id: str, task_id: str, payload: FeedbackRequest) -> dict[str, Any]:
+def feedback(
+    workspace_id: str,
+    task_id: str,
+    payload: FeedbackRequest,
+    principal: Principal = Depends(require_roles(ADMIN, REVIEWER)),
+) -> dict[str, Any]:
     try:
         return submit_feedback(
             workspace_id=workspace_id,
@@ -56,7 +68,7 @@ def feedback(workspace_id: str, task_id: str, payload: FeedbackRequest) -> dict[
             after_text=payload.after_text,
             accepted=payload.accepted,
             edit_tags=payload.edit_tags,
-            reviewer=payload.reviewer,
+            reviewer=principal.actor,
             reviewer_score=payload.reviewer_score,
             outcome=payload.outcome,
             award_amount=payload.award_amount,

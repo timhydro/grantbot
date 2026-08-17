@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from grantbot.packaging.packet_v19 import (
     approve_packet,
@@ -14,9 +14,26 @@ from grantbot.packaging.packet_v19 import (
     register_attachment,
     verify_attachment,
 )
+from grantbot.security.auth import (
+    ADMIN,
+    AUTHORIZED_REPRESENTATIVE,
+    FINANCIAL_REVIEWER,
+    GRANT_WRITER,
+    REVIEWER,
+    Principal,
+    require_roles,
+)
 
 
 router = APIRouter(prefix="/v19/packet", tags=["GrantBot Packet Compliance v19"])
+
+READ_ROLES = (
+    ADMIN,
+    GRANT_WRITER,
+    REVIEWER,
+    FINANCIAL_REVIEWER,
+    AUTHORIZED_REPRESENTATIVE,
+)
 
 
 def _error(exc: Exception) -> HTTPException:
@@ -28,7 +45,11 @@ def _error(exc: Exception) -> HTTPException:
 
 
 @router.post("/build/{workspace_id}")
-def build(workspace_id: str) -> dict[str, Any]:
+def build(
+    workspace_id: str,
+    principal: Principal = Depends(require_roles(ADMIN, GRANT_WRITER)),
+) -> dict[str, Any]:
+    del principal
     try:
         return build_packet(workspace_id)
     except Exception as exc:
@@ -36,7 +57,11 @@ def build(workspace_id: str) -> dict[str, Any]:
 
 
 @router.get("/{packet_id}")
-def get(packet_id: str) -> dict[str, Any]:
+def get(
+    packet_id: str,
+    principal: Principal = Depends(require_roles(*READ_ROLES)),
+) -> dict[str, Any]:
+    del principal
     try:
         return get_packet(packet_id)
     except Exception as exc:
@@ -50,7 +75,9 @@ async def upload(
     logical_name: str = Form(),
     required: bool = Form(True),
     file: UploadFile = File(),
+    principal: Principal = Depends(require_roles(ADMIN, GRANT_WRITER)),
 ) -> dict[str, Any]:
+    del principal
     target: Path | None = None
     try:
         target = controlled_upload_path(workspace_id, file.filename or logical_name)
@@ -80,24 +107,41 @@ async def upload(
 
 
 @router.post("/{packet_id}/attachments/{attachment_id}/verify")
-def verify(packet_id: str, attachment_id: str, actor: str = Form()) -> dict[str, Any]:
+def verify(
+    packet_id: str,
+    attachment_id: str,
+    actor: str = Form(default=""),
+    principal: Principal = Depends(require_roles(ADMIN, REVIEWER)),
+) -> dict[str, Any]:
+    del actor
     try:
-        return verify_attachment(packet_id, attachment_id, actor=actor)
+        return verify_attachment(packet_id, attachment_id, actor=principal.actor)
     except Exception as exc:
         raise _error(exc) from exc
 
 
 @router.post("/{packet_id}/approve")
-def approve(packet_id: str, actor: str = Form(), note: str = Form()) -> dict[str, Any]:
+def approve(
+    packet_id: str,
+    actor: str = Form(default=""),
+    note: str = Form(),
+    principal: Principal = Depends(require_roles(ADMIN, AUTHORIZED_REPRESENTATIVE)),
+) -> dict[str, Any]:
+    del actor
     try:
-        return approve_packet(packet_id, actor=actor, note=note)
+        return approve_packet(packet_id, actor=principal.actor, note=note)
     except Exception as exc:
         raise _error(exc) from exc
 
 
 @router.post("/{packet_id}/seal")
-def seal(packet_id: str, actor: str = Form()) -> dict[str, Any]:
+def seal(
+    packet_id: str,
+    actor: str = Form(default=""),
+    principal: Principal = Depends(require_roles(ADMIN, AUTHORIZED_REPRESENTATIVE)),
+) -> dict[str, Any]:
+    del actor
     try:
-        return finalize_packet(packet_id, actor=actor)
+        return finalize_packet(packet_id, actor=principal.actor)
     except Exception as exc:
         raise _error(exc) from exc
