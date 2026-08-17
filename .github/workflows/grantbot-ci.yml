@@ -31,7 +31,7 @@ jobs:
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
 
-      - name: Verify unified routes
+      - name: Verify unified routes and RBAC declarations
         run: |
           python - <<'PY'
           from grantbot.app import app
@@ -48,9 +48,19 @@ jobs:
               "/master/documents/analyze",
               "/master/facts",
               "/master/retrieval/facts",
+              "/master/security/status",
+              "/master/security/keys",
+              "/master/security/keys/{key_id}",
           }
           missing = required - paths
           if missing:
               raise SystemExit(f"Missing unified routes: {sorted(missing)}")
-          print(f"Unified route verification passed: {len(paths)} routes")
+          schema = app.openapi()
+          security_schemes = schema.get("components", {}).get("securitySchemes", {})
+          if not security_schemes:
+              raise SystemExit("No FastAPI security scheme declared")
+          protected = schema["paths"]["/master/security/status"]["get"].get("security")
+          if not protected:
+              raise SystemExit("Security management route lacks authentication declaration")
+          print(f"Unified route/RBAC verification passed: {len(paths)} routes")
           PY

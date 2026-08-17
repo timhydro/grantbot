@@ -1,8 +1,13 @@
 from fastapi import FastAPI
 
+from grantbot.security.auth import ensure_admin_key
+
+
+ensure_admin_key()
+
 app = FastAPI(
     title="GrantBot Pro Unified",
-    version="20.0.0",
+    version="20.1.0",
     description="Unified V5-V19 + Master funding intelligence and application platform.",
 )
 
