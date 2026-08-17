@@ -12,57 +12,24 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
+from docx import Document as DocxDocument
 from pypdf import PdfReader
 
 from grantbot.discovery.grants_gov import fetch_opportunity
+from grantbot.evidence.document_intelligence import AUTHORITY_RANKS, classify_authority
+from grantbot.evidence.repository import ingest_document, list_requirements
 from grantbot.nofo.full_detail import get_full_nofo_intelligence
 
 
 MAX_DOWNLOAD_BYTES = 30 * 1024 * 1024
 TIMEOUT_SECONDS = 30
+MAX_DOCUMENTS = 40
+MAX_BLUEPRINT_TEXT_BYTES = 2_000_000
 ALLOWED_HOST_SUFFIXES = (".gov", "grants.gov", "simpler.grants.gov")
 
 QUESTION_RE = re.compile(
     r"\b(describe|explain|provide|discuss|identify|demonstrate|summarize|"
     r"detail|outline|justify|address|state|specify|document)\b",
-    re.I,
-)
-
-REQUIREMENT_RE = re.compile(
-    r"\b(must|shall|required|submit|attach|attachment|budget|narrative|"
-    r"timeline|work plan|logic model|letter|MOU|MOA|SF-424|UEI|SAM\.gov|"
-    r"match|cost[- ]sharing|performance measure|data collection)\b",
-    re.I,
-)
-
-SCORING_RE = re.compile(
-    r"\b(points?|percent|percentage|weighted|weight)\b|\b\d{1,3}\s*%",
-    re.I,
-)
-
-BUDGET_RE = re.compile(
-    r"\b(budget|budget narrative|allowable cost|indirect cost|personnel|"
-    r"fringe|travel|equipment|supplies|contractual|construction|other costs?)\b",
-    re.I,
-)
-
-MATCH_RE = re.compile(
-    r"\b(match|matching funds?|cost[- ]sharing|non[- ]federal share|"
-    r"in[- ]kind|cash contribution|waiver)\b",
-    re.I,
-)
-
-SUBMISSION_RE = re.compile(
-    r"\b(submit|submission|Grants\.gov|JustGrants|deadline|due date|"
-    r"SAM\.gov|UEI|registration|application package)\b",
-    re.I,
-)
-
-ATTACHMENT_RE = re.compile(
-    r"\b(attachment|appendix|letter of support|letter of commitment|"
-    r"memorandum of understanding|memorandum of agreement|MOU|MOA|"
-    r"logic model|timeline|work plan|budget narrative|project narrative|"
-    r"organizational chart|indirect cost rate agreement)\b",
     re.I,
 )
 
@@ -91,6 +58,16 @@ class ApplicationBlueprint:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
+class AcquiredDocument:
+    url: str
+    content_type: str
+    title: str
+    authority_type: str
+    authority_rank: int
+    pages: list[str]
 
 
 class _HTMLTextParser(HTMLParser):
@@ -130,10 +107,8 @@ def _safe_url(url: str) -> bool:
         parsed = urllib.parse.urlparse(url)
     except ValueError:
         return False
-
     if parsed.scheme != "https":
         return False
-
     host = (parsed.hostname or "").lower()
     return any(
         host == suffix.lstrip(".") or host.endswith(suffix)
@@ -144,26 +119,20 @@ def _safe_url(url: str) -> bool:
 def _dedupe(values: list[str], limit: int = 300) -> list[str]:
     result: list[str] = []
     seen: set[str] = set()
-
     for raw in values:
         value = " ".join(str(raw).split()).strip()
         key = value.casefold()
-
         if not value or key in seen:
             continue
-
         seen.add(key)
         result.append(value)
-
         if len(result) >= limit:
             break
-
     return result
 
 
 def _walk_strings(value: Any) -> list[str]:
     result: list[str] = []
-
     if isinstance(value, str):
         result.append(value)
     elif isinstance(value, dict):
@@ -172,7 +141,6 @@ def _walk_strings(value: Any) -> list[str]:
     elif isinstance(value, list):
         for nested in value:
             result.extend(_walk_strings(nested))
-
     return result
 
 
@@ -180,125 +148,102 @@ def _request(url: str) -> tuple[bytes, str, str]:
     request = urllib.request.Request(
         url,
         headers={
-            "User-Agent": "GrantBotPro/13.0",
-            "Accept": "application/pdf,text/html,text/plain,*/*;q=0.2",
+            "User-Agent": "GrantBotPro/20.0",
+            "Accept": (
+                "application/pdf,application/vnd.openxmlformats-officedocument."
+                "wordprocessingml.document,text/html,text/plain,*/*;q=0.2"
+            ),
         },
     )
-
     with urllib.request.urlopen(
         request,
         timeout=TIMEOUT_SECONDS,
         context=ssl.create_default_context(),
     ) as response:
         final_url = response.geturl()
-
         if not _safe_url(final_url):
             raise ValueError(f"Unsafe redirect: {final_url}")
-
         content_type = response.headers.get_content_type() or "application/octet-stream"
         data = response.read(MAX_DOWNLOAD_BYTES + 1)
-
         if len(data) > MAX_DOWNLOAD_BYTES:
             raise ValueError("NOFO document exceeds download size limit")
-
         return data, content_type, final_url
 
 
-def _extract_text(
+def _extract_document(
     data: bytes,
     content_type: str,
     url: str,
-) -> tuple[str, list[str]]:
+) -> tuple[list[str], list[str]]:
     path = urllib.parse.urlparse(url).path.lower()
-
     if content_type == "application/pdf" or path.endswith(".pdf"):
         reader = PdfReader(BytesIO(data))
-        parts: list[str] = []
+        pages = [(page.extract_text() or "").strip() for page in reader.pages]
+        return pages, []
 
-        for page in reader.pages:
-            value = page.extract_text() or ""
-            if value.strip():
-                parts.append(value)
-
-        return "\n".join(parts), []
+    if (
+        content_type
+        == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        or path.endswith(".docx")
+    ):
+        document = DocxDocument(BytesIO(data))
+        text = "\n".join(
+            paragraph.text.strip()
+            for paragraph in document.paragraphs
+            if paragraph.text.strip()
+        )
+        return [text], []
 
     if content_type == "text/html" or path.endswith((".html", ".htm")):
         parser = _HTMLTextParser()
         parser.feed(data.decode("utf-8", errors="replace"))
-
-        links = [
-            urllib.parse.urljoin(url, href)
-            for href in parser.links
-        ]
-
-        return "\n".join(parser.parts), links
+        links = [urllib.parse.urljoin(url, href) for href in parser.links]
+        return ["\n".join(parser.parts)], links
 
     if content_type.startswith("text/") or path.endswith(".txt"):
-        return data.decode("utf-8", errors="replace"), []
+        return [data.decode("utf-8", errors="replace")], []
 
-    return "", []
+    return [], []
+
+
+def _document_title(url: str, fallback: str) -> str:
+    path = urllib.parse.unquote(urllib.parse.urlparse(url).path)
+    filename = Path(path).name.strip()
+    return filename or fallback
+
+
+def _resolve_authority(
+    *,
+    url: str,
+    title: str,
+    content_type: str,
+) -> str:
+    resolved = classify_authority(
+        source_url=url,
+        title=title,
+        document_type=content_type,
+    )
+    if resolved == "INFORMATIONAL_WEBPAGE" and (
+        content_type == "application/pdf" or url.lower().endswith(".pdf")
+    ):
+        filename = Path(urllib.parse.urlparse(url).path).name.lower()
+        if any(token in filename for token in ("notice", "nofo", "foa", "funding-opportunity")):
+            return "PRIMARY_NOFO"
+        if "instruction" in filename or "application-guide" in filename:
+            return "APPLICATION_INSTRUCTIONS"
+    return resolved
 
 
 def _lines(text: str) -> list[str]:
     result: list[str] = []
-
     for raw in text.replace("\r", "\n").split("\n"):
         value = " ".join(raw.split()).strip()
         if 10 <= len(value) <= 1200:
             result.append(value)
-
     return result
 
 
-def _matching(
-    lines: list[str],
-    pattern: re.Pattern[str],
-    limit: int,
-) -> list[str]:
-    return _dedupe(
-        [line for line in lines if pattern.search(line)],
-        limit=limit,
-    )
-
-
-
-def _validated_extract(lines: list[str], kind: str) -> list[str]:
-    rules = {
-        "question": (
-            "describe", "explain", "provide", "identify", "demonstrate",
-            "discuss", "summarize", "how will", "what is", "what are",
-            "applicant", "project", "program", "organization",
-        ),
-        "requirement": (
-            "must ", "shall ", "required", "requirement",
-            "applicant", "recipient", "eligible", "eligibility",
-        ),
-        "scoring": (
-            "scoring", "evaluation criteria", "rating factor",
-            "selection criteria", "maximum points", "review criteria",
-        ),
-        "budget": (
-            "budget", "allowable cost", "eligible cost", "indirect cost",
-            "construction", "rehabilitation", "acquisition",
-            "rental assistance",
-        ),
-        "match": (
-            "matching funds", "match requirement", "cost sharing",
-            "cost-sharing", "non-federal share", "in-kind match",
-        ),
-        "submission": (
-            "submit the application", "application must be submitted",
-            "submission deadline", "application deadline", "due date",
-            "grants.gov", "application package", "electronic submission",
-        ),
-        "attachment": (
-            "required attachment", "attachment ", "sf-424", "sf424",
-            "budget narrative", "budget worksheet", "letter of commitment",
-            "letter of support", "organizational chart", "logic model",
-            "resume", "certification", "assurances", "agreement",
-        ),
-    }
-
+def _validated_questions(lines: list[str]) -> list[str]:
     noise = (
         "questions or comments",
         "can you talk about",
@@ -307,47 +252,73 @@ def _validated_extract(lines: list[str], kind: str) -> list[str]:
         "how did you",
         "who else",
         "office hours",
-        "find state resources",
-        "balance of state coc",
         "submit questions",
         "comments or questions",
-        "aaq desk",
     )
-
-    result = []
-
+    result: list[str] = []
     for raw in lines:
         text = " ".join(str(raw).split()).strip()
         low = text.lower()
-
         if len(text) < 8 or len(text) > 700:
             continue
-
-        if any(x in low for x in noise):
+        if any(item in low for item in noise):
             continue
-
-        if kind == "question":
-            if "?" not in text and not any(
-                low.startswith(x)
-                for x in (
-                    "describe ",
-                    "explain ",
-                    "provide ",
-                    "identify ",
-                    "demonstrate ",
-                    "discuss ",
-                    "summarize ",
-                )
-            ):
-                continue
-
-        if kind == "attachment" and len(text) > 300:
-            continue
-
-        if any(x in low for x in rules[kind]):
+        starts_as_prompt = any(
+            low.startswith(prefix)
+            for prefix in (
+                "describe ",
+                "explain ",
+                "provide ",
+                "identify ",
+                "demonstrate ",
+                "discuss ",
+                "summarize ",
+                "outline ",
+                "justify ",
+                "address ",
+            )
+        )
+        if ("?" in text or starts_as_prompt) and QUESTION_RE.search(text):
             result.append(text)
-
     return _dedupe(result, limit=250)
+
+
+def _authoritative_documents(documents: list[AcquiredDocument]) -> list[AcquiredDocument]:
+    strong = [item for item in documents if item.authority_rank <= 6]
+    return strong or documents
+
+
+def _requirement_texts(
+    requirements: list[dict[str, Any]],
+    *categories: str,
+    limit: int = 250,
+) -> list[str]:
+    allowed = {category.upper() for category in categories}
+    values = [
+        str(item.get("text", ""))
+        for item in requirements
+        if not allowed or str(item.get("category", "")).upper() in allowed
+    ]
+    return _dedupe(values, limit=limit)
+
+
+def _queue_link(link: str) -> bool:
+    low = link.lower()
+    return _safe_url(link) and any(
+        token in low
+        for token in (
+            ".pdf",
+            ".docx",
+            "nofo",
+            "notice",
+            "attachment",
+            "download",
+            "instructions",
+            "application-guide",
+            "amendment",
+            "faq",
+        )
+    )
 
 
 def acquire_blueprint(
@@ -356,27 +327,22 @@ def acquire_blueprint(
     manual_urls: list[str] | None = None,
 ) -> ApplicationBlueprint:
     opportunity_id = opportunity_id.strip()
-
     if not opportunity_id or len(opportunity_id) > 80:
         raise ValueError("Invalid opportunity_id")
 
     raw = fetch_opportunity(opportunity_id)
-
     if not isinstance(raw, dict):
         raise RuntimeError("Invalid Grants.gov opportunity payload")
-
     full = get_full_nofo_intelligence(opportunity_id)
 
     urls = [
         f"https://www.grants.gov/search-results-detail/"
         f"{urllib.parse.quote(opportunity_id, safe='')}"
     ]
-
     for value in _walk_strings(raw):
         value = html.unescape(value.strip())
         if value.startswith("https://") and _safe_url(value):
             urls.append(value)
-
     for value in manual_urls or []:
         value = value.strip()
         if not _safe_url(value):
@@ -387,66 +353,83 @@ def acquire_blueprint(
 
     queue = _dedupe(urls, limit=60)
     visited: set[str] = set()
-    acquired_urls: list[str] = []
-    text_parts: list[str] = []
+    acquired: list[AcquiredDocument] = []
     warnings: list[str] = []
 
-    while queue and len(visited) < 40:
+    while queue and len(visited) < MAX_DOCUMENTS:
         url = queue.pop(0)
-
         if url in visited or not _safe_url(url):
             continue
-
         visited.add(url)
-
         try:
             data, content_type, final_url = _request(url)
-            text, links = _extract_text(data, content_type, final_url)
-
-            if text.strip():
-                text_parts.append(text)
-                acquired_urls.append(final_url)
-
-            for link in links:
-                low = link.lower()
-
-                if (
-                    _safe_url(link)
-                    and any(
-                        token in low
-                        for token in (
-                            ".pdf",
-                            "nofo",
-                            "notice",
-                            "attachment",
-                            "download",
-                            "instructions",
-                        )
+            pages, links = _extract_document(data, content_type, final_url)
+            pages = [page for page in pages if page.strip()]
+            if pages:
+                title = _document_title(final_url, full.title)
+                authority = _resolve_authority(
+                    url=final_url,
+                    title=title,
+                    content_type=content_type,
+                )
+                document = AcquiredDocument(
+                    url=final_url,
+                    content_type=content_type,
+                    title=title,
+                    authority_type=authority,
+                    authority_rank=AUTHORITY_RANKS[authority],
+                    pages=pages,
+                )
+                acquired.append(document)
+                try:
+                    ingest_document(
+                        opportunity_id=opportunity_id,
+                        title=title,
+                        pages=pages,
+                        source_url=final_url,
+                        document_type=content_type,
+                        authority_type=authority,
                     )
-                    and link not in visited
-                    and link not in queue
-                ):
+                except Exception as exc:
+                    warnings.append(
+                        f"Evidence indexing warning for {final_url}: "
+                        f"{type(exc).__name__}: {exc}"
+                    )
+            for link in links:
+                if _queue_link(link) and link not in visited and link not in queue:
                     queue.append(link)
-
         except Exception as exc:
-            warnings.append(
-                f"{url}: {type(exc).__name__}: {exc}"
-            )
+            warnings.append(f"{url}: {type(exc).__name__}: {exc}")
 
-    combined = "\n\n".join(text_parts)[:2_000_000]
-    lines = _lines(combined)
+    authoritative_docs = _authoritative_documents(acquired)
+    authoritative_text = "\n\n".join(
+        page
+        for document in authoritative_docs
+        for page in document.pages
+    )[:MAX_BLUEPRINT_TEXT_BYTES]
+    questions = _validated_questions(_lines(authoritative_text))
 
-    questions = _validated_extract(lines, "question")
-    requirements = _validated_extract(lines, "requirement")
-    scoring_criteria = _validated_extract(lines, "scoring")
-    budget_requirements = _validated_extract(lines, "budget")
-    match_requirements = _validated_extract(lines, "match")
-    submission_requirements = _validated_extract(lines, "submission")
-    required_attachments = _validated_extract(lines, "attachment")
+    try:
+        evidence_requirements = list_requirements(
+            opportunity_id=opportunity_id,
+            authoritative_only=True,
+        )
+    except Exception as exc:
+        evidence_requirements = []
+        warnings.append(
+            f"Requirement evidence retrieval warning: {type(exc).__name__}: {exc}"
+        )
+
+    requirements = _requirement_texts(evidence_requirements)
+    scoring_criteria = _requirement_texts(evidence_requirements, "SCORING")
+    budget_requirements = _requirement_texts(evidence_requirements, "BUDGET")
+    match_requirements = _requirement_texts(evidence_requirements, "MATCH")
+    submission_requirements = _requirement_texts(evidence_requirements, "SUBMISSION")
+    required_attachments = _requirement_texts(evidence_requirements, "ATTACHMENT")
 
     quality_count = sum(
-        bool(x)
-        for x in (
+        bool(value)
+        for value in (
             questions,
             requirements,
             scoring_criteria,
@@ -456,22 +439,23 @@ def acquire_blueprint(
             full.eligibility,
         )
     )
-
-    if not combined.strip():
+    acquired_text = any(document.pages for document in acquired)
+    strong_sources = [item for item in acquired if item.authority_rank <= 6]
+    if not acquired_text:
         acquisition_status = "METADATA_ONLY"
-    elif (
-        quality_count >= 5
-        and requirements
-        and full.eligibility
-        and (questions or submission_requirements)
-    ):
+    elif strong_sources and quality_count >= 5 and requirements and full.eligibility:
         acquisition_status = "FULL_NOFO_VALIDATED"
     else:
         acquisition_status = "FULL_TEXT_ACQUIRED"
 
     if not questions:
         warnings.append(
-            "No application questions were extracted from acquired source text."
+            "No application questions were extracted from authoritative source text."
+        )
+    if acquired and not strong_sources:
+        warnings.append(
+            "No primary NOFO, amendment, application instructions, form, FAQ, or official guidance "
+            "was confidently identified; requirement extraction used the best available government text."
         )
 
     root = (
@@ -481,7 +465,6 @@ def acquire_blueprint(
         / re.sub(r"[^A-Za-z0-9._-]+", "_", opportunity_id)
     )
     root.mkdir(parents=True, exist_ok=True)
-
     output_path = root / "application_blueprint.json"
 
     blueprint = ApplicationBlueprint(
@@ -490,7 +473,7 @@ def acquire_blueprint(
         title=full.title,
         funder=full.funder,
         acquisition_status=acquisition_status,
-        source_urls=_dedupe(acquired_urls),
+        source_urls=_dedupe([document.url for document in acquired]),
         application_questions=questions,
         requirements=requirements,
         scoring_criteria=scoring_criteria,
@@ -505,16 +488,10 @@ def acquire_blueprint(
         warnings=_dedupe(warnings, limit=100),
         output_path=str(output_path),
     )
-
     output_path.write_text(
-        json.dumps(
-            blueprint.to_dict(),
-            indent=2,
-            ensure_ascii=False,
-        ) + "\n",
+        json.dumps(blueprint.to_dict(), indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
-
     return blueprint
 
 
@@ -524,7 +501,6 @@ def load_blueprint(opportunity_id: str) -> dict[str, Any]:
         "_",
         opportunity_id.strip(),
     )
-
     path = (
         Path(__file__).resolve().parents[2]
         / "data"
@@ -532,13 +508,9 @@ def load_blueprint(opportunity_id: str) -> dict[str, Any]:
         / safe_id
         / "application_blueprint.json"
     )
-
     if not path.exists():
         raise FileNotFoundError(str(path))
-
     data = json.loads(path.read_text(encoding="utf-8"))
-
     if not isinstance(data, dict):
         raise RuntimeError("Stored NOFO blueprint is invalid")
-
     return data
