@@ -7,10 +7,10 @@ ensure_admin_key()
 
 app = FastAPI(
     title="GrantBot Pro Unified",
-    version="20.2.0",
+    version="20.3.0",
     description=(
-        "Unified V5-V19 + Master funding intelligence, "
-        "authoritative compliance, and application platform."
+        "Unified V5-V19 + Master funding intelligence, authoritative "
+        "compliance, financial consistency, and application platform."
     ),
 )
 
@@ -47,6 +47,9 @@ from grantbot.api.master import router as master_router
 from grantbot.api.requirement_compliance import (
     router as requirement_compliance_router,
 )
+from grantbot.api.budget_consistency import (
+    router as budget_consistency_router,
+)
 
 app.include_router(master_pipeline_v5_router)
 app.include_router(discovery_v6_router)
@@ -66,3 +69,4 @@ app.include_router(application_writer_v18_router)
 app.include_router(packet_v19_router)
 app.include_router(master_router)
 app.include_router(requirement_compliance_router)
+app.include_router(budget_consistency_router)

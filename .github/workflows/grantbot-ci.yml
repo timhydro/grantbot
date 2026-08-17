@@ -31,7 +31,7 @@ jobs:
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
 
-      - name: Verify unified routes, RBAC, packet integrity, and requirement compliance
+      - name: Verify unified routes, RBAC, packet integrity, requirements, and budget consistency
         run: |
           python - <<'PY'
           from grantbot.app import app
@@ -57,6 +57,11 @@ jobs:
               "/master/requirements/sync/{workspace_id}",
               "/master/requirements/status/{workspace_id}",
               "/master/requirements/status/{workspace_id}/{requirement_id}",
+              "/master/budgets/{workspace_id}",
+              "/master/budgets/{workspace_id}/latest",
+              "/master/budgets/{workspace_id}/history",
+              "/master/budgets/{workspace_id}/consistency",
+              "/master/budgets/{workspace_id}/{budget_id}/approve",
           }
           missing = required - paths
           if missing:
@@ -73,10 +78,12 @@ jobs:
               ("/v19/packet/{packet_id}/seal", "post"),
               ("/master/requirements/sync/{workspace_id}", "post"),
               ("/master/requirements/status/{workspace_id}", "get"),
-              (
-                  "/master/requirements/status/{workspace_id}/{requirement_id}",
-                  "put",
-              ),
+              ("/master/requirements/status/{workspace_id}/{requirement_id}", "put"),
+              ("/master/budgets/{workspace_id}", "post"),
+              ("/master/budgets/{workspace_id}/latest", "get"),
+              ("/master/budgets/{workspace_id}/history", "get"),
+              ("/master/budgets/{workspace_id}/consistency", "get"),
+              ("/master/budgets/{workspace_id}/{budget_id}/approve", "post"),
           )
           for path, method in protected_paths:
               if not schema["paths"][path][method].get("security"):
@@ -85,7 +92,7 @@ jobs:
                   )
 
           print(
-              "Unified route/RBAC/packet/requirement verification passed: "
+              "Unified route/RBAC/packet/requirement/budget verification passed: "
               f"{len(paths)} routes"
           )
           PY

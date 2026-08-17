@@ -5,7 +5,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
-from grantbot.packaging.packet_guard_v19 import (
+from grantbot.packaging.packet_budget_guard import (
     approve_packet,
     build_packet,
     controlled_upload_path,
