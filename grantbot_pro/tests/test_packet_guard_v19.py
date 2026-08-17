@@ -40,12 +40,18 @@ class PacketGuardV19Tests(unittest.TestCase):
                 "model": "llama3.2:3b",
             }
         ]
+        workspace_reader = lambda _: deepcopy(self.workspace)
         self.patches = [
             patch.object(packet_v19, "_root", return_value=self.root),
             patch.object(
+                packet_v19,
+                "get_workspace",
+                side_effect=workspace_reader,
+            ),
+            patch.object(
                 guard,
                 "get_workspace",
-                side_effect=lambda _: deepcopy(self.workspace),
+                side_effect=workspace_reader,
             ),
             patch.object(
                 guard,
