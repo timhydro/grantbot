@@ -327,9 +327,7 @@ def calculate_risk(inputs: dict[str, Any]) -> dict[str, Any]:
     backlog_score = _clamp(open_risks * 18 + pending_checklist * 6)
     backlog_factor = (
         backlog_score,
-        [
-            f"{open_risks} open risk(s) and {pending_checklist} pending checklist item(s) remain."
-        ],
+        [f"{open_risks} open risk(s) and {pending_checklist} pending checklist item(s) remain."],
         ["Close documented risks and checklist dependencies with named evidence and reviewers."]
         if backlog_score
         else [],
@@ -378,8 +376,10 @@ def calculate_risk(inputs: dict[str, Any]) -> dict[str, Any]:
     hard_blockers.extend(str(item) for item in requirements[3])
     hard_blockers.extend(str(item) for item in financial[3])
     hard_blockers.extend(str(item) for item in deadline[3])
-    if role.strip().upper() in {"REJECT", "INELIGIBLE"}:
-        hard_blockers.extend(eligibility_blockers or ["applicant is ineligible"])
+    fatal_role = role.strip().upper() in {"REJECT", "INELIGIBLE"}
+    if fatal_role:
+        hard_blockers.extend(eligibility_blockers)
+        hard_blockers.append("applicant is ineligible")
     hard_blockers = list(dict.fromkeys(item for item in hard_blockers if item))
 
     controls = list(
@@ -391,6 +391,14 @@ def calculate_risk(inputs: dict[str, Any]) -> dict[str, Any]:
         )
     )
     risk_index = _clamp(sum(factor.weighted_score for factor in factors))
+    fatal_deadline = any(
+        "deadline has passed" in blocker.casefold()
+        for blocker in hard_blockers
+    )
+    if fatal_role or fatal_deadline:
+        risk_index = max(risk_index, 95)
+    elif hard_blockers:
+        risk_index = max(risk_index, 70)
 
     availability = {
         "applicant_role": bool(role.strip()),
