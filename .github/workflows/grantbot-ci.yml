@@ -45,6 +45,9 @@ jobs:
               "/master/system/versions",
               "/master/budget/calculate",
               "/master/logic-model/validate",
+              "/master/documents/analyze",
+              "/master/facts",
+              "/master/retrieval/facts",
           }
           missing = required - paths
           if missing:

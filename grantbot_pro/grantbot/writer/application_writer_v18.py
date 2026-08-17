@@ -3,8 +3,10 @@ from __future__ import annotations
 from typing import Any
 
 from grantbot.claims.checker import check_claims
-from grantbot.knowledge.repository import working_facts
+from grantbot.evidence.repository import list_requirements
+from grantbot.knowledge.canonical import migrate_legacy_facts
 from grantbot.master.database import record_feedback, save_revision
+from grantbot.retrieval.hybrid import rank_facts
 from grantbot.review.staging_v17 import get_workspace, save_draft
 from grantbot.writing.master_writer import write_answer
 
@@ -18,29 +20,78 @@ CATEGORY_TO_SECTION = {
     "PROGRAM_NARRATIVE": "program_design",
 }
 
+TASK_REQUIREMENT_CATEGORIES = {
+    "BUDGET_FINANCE": {"BUDGET", "MATCH", "SUBMISSION"},
+    "OUTCOMES_EVALUATION": {"REPORTING", "SCORING", "COMPLIANCE"},
+    "ORGANIZATIONAL_CAPACITY": {"ELIGIBILITY", "ATTACHMENT", "COMPLIANCE"},
+    "NEEDS_STATEMENT": {"SCORING", "GENERAL"},
+    "SUSTAINABILITY": {"SCORING", "BUDGET", "MATCH"},
+    "PROGRAM_NARRATIVE": {"ELIGIBILITY", "SCORING", "GENERAL"},
+}
 
-def _fact_text(fact: dict[str, Any]) -> str:
-    return " ".join(
-        str(fact.get(key, ""))
-        for key in ("category", "fact_key", "key", "value", "answer", "notes")
-    ).lower()
+
+def _writer_fact(fact: dict[str, Any]) -> dict[str, Any] | None:
+    fact_type = str(fact.get("fact_type", "")).upper()
+    verification = str(fact.get("verification_state", "")).upper()
+    if fact_type == "REASONABLE_PROJECTION":
+        status = "DRAFT"
+    elif verification == "APPROVED":
+        status = "APPROVED"
+    elif verification == "VERIFIED":
+        status = "VERIFIED"
+    else:
+        return None
+    return {
+        "id": str(fact.get("fact_id", "")),
+        "category": str(fact.get("category", "general")),
+        "key": str(fact.get("fact_key", "")),
+        "value": fact.get("value"),
+        "status": status,
+        "source": str(fact.get("source", "unknown")),
+        "notes": str(fact.get("notes", "")),
+        "fact_type": fact_type,
+        "verification_state": verification,
+        "retrieval_score": fact.get("retrieval_score"),
+    }
 
 
 def _relevant_facts(question: str, limit: int = 24) -> list[dict[str, Any]]:
-    terms = {term.lower() for term in question.split() if len(term) >= 4}
-    facts = working_facts()
-    ranked = []
-    for fact in facts:
-        text = _fact_text(fact)
-        overlap = sum(1 for term in terms if term in text)
-        trust = {"APPROVED": 3, "VERIFIED": 2, "DRAFT": 1}.get(
-            str(fact.get("status", "")).upper(), 0
+    migrate_legacy_facts()
+    ranked = rank_facts(question, limit=max(limit * 2, 20), include_unverified=True)
+    selected: list[dict[str, Any]] = []
+    for fact in ranked:
+        converted = _writer_fact(fact)
+        if converted is None:
+            continue
+        selected.append(converted)
+        if len(selected) >= limit:
+            break
+    return selected
+
+
+def _authoritative_requirements(
+    opportunity_id: str,
+    task_category: str,
+    *,
+    limit: int = 30,
+) -> list[str]:
+    try:
+        records = list_requirements(
+            opportunity_id=opportunity_id,
+            authoritative_only=True,
         )
-        ranked.append((overlap * 10 + trust, fact))
-    ranked.sort(key=lambda pair: pair[0], reverse=True)
-    selected = [fact for score, fact in ranked if score > 0][:limit]
-    if not selected:
-        selected = [fact for _, fact in ranked[: min(limit, 8)]]
+    except (ValueError, FileNotFoundError):
+        return []
+    categories = TASK_REQUIREMENT_CATEGORIES.get(task_category, {"GENERAL"})
+    selected: list[str] = []
+    for item in records:
+        if str(item.get("category", "GENERAL")) not in categories:
+            continue
+        text = " ".join(str(item.get("text", "")).split()).strip()
+        if text and text not in selected:
+            selected.append(text)
+        if len(selected) >= limit:
+            break
     return selected
 
 
@@ -61,13 +112,22 @@ def draft_task(
     facts = _relevant_facts(task["question"])
     analysis = workspace.get("analysis") or {}
     blueprint = analysis.get("blueprint") or {}
-    priorities = list(dict.fromkeys(
-        list(blueprint.get("priorities") or []) + list(task.get("strategy") or [])
-    ))
-    requirements = list(dict.fromkeys(
-        list(blueprint.get("submission_requirements") or [])
-        + list(task.get("evidence_requirements") or [])
-    ))
+    priorities = list(
+        dict.fromkeys(
+            list(blueprint.get("priorities") or [])
+            + list(task.get("strategy") or [])
+        )
+    )
+    requirements = list(
+        dict.fromkeys(
+            _authoritative_requirements(
+                str(workspace.get("opportunity_id", "")),
+                str(task.get("category", "PROGRAM_NARRATIVE")),
+            )
+            + list(blueprint.get("submission_requirements") or [])
+            + list(task.get("evidence_requirements") or [])
+        )
+    )
 
     result = write_answer(
         question=task["question"],
@@ -104,8 +164,11 @@ def draft_task(
     )
     provenance = [
         {
-            "source": f"fact:{fact.get('id', fact.get('fact_key', fact.get('key', 'unknown')))}",
-            "note": f"{fact.get('status', 'UNKNOWN')} organizational knowledge",
+            "source": f"fact:{fact.get('id', 'unknown')}",
+            "note": (
+                f"{fact.get('fact_type', 'UNKNOWN')} / "
+                f"{fact.get('verification_state', fact.get('status', 'UNKNOWN'))}"
+            ),
         }
         for fact in facts
     ]
@@ -125,6 +188,7 @@ def draft_task(
         "quality": quality,
         "claims": claims,
         "facts_used": facts,
+        "authoritative_requirements": requirements,
         "missing_information": result.missing_information,
         "provider": result.provider,
         "model": result.model,
@@ -174,6 +238,11 @@ def submit_feedback(
             task_id,
             response=after_text.strip(),
             status="READY_FOR_REVIEW",
-            provenance=[{"source": f"human:{reviewer.strip()}", "note": "Human-reviewed V18 revision"}],
+            provenance=[
+                {
+                    "source": f"human:{reviewer.strip()}",
+                    "note": "Human-reviewed V18 revision",
+                }
+            ],
         )
     return record
