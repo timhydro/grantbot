@@ -71,13 +71,15 @@ def health() -> dict[str, Any]:
 
 
 def submission_gate(workspace_id: str) -> dict[str, Any]:
-    # Imported lazily to avoid a package initialization cycle:
-    # evidence.repository -> master.database -> master.__init__ -> service.
+    # Lazy imports avoid package initialization cycles while keeping the
+    # submission gate authoritative over both compliance and financial state.
+    from grantbot.budget.workspace import budget_consistency
     from grantbot.compliance.requirements import requirement_summary
 
     workspace = get_workspace(workspace_id)
     blockers: list[str] = []
     requirement_gate = requirement_summary(workspace_id)
+    budget_gate = budget_consistency(workspace_id)
     if not workspace.get("human_approved"):
         blockers.append("application lacks human approval")
     if workspace.get("stage") != "READY_FOR_SUBMISSION":
@@ -103,6 +105,11 @@ def submission_gate(workspace_id: str) -> dict[str, Any]:
             f"{requirement_gate['blocking_count']} unresolved "
             "authoritative requirement(s)"
         )
+    if budget_gate["blockers"]:
+        blockers.extend(
+            f"budget consistency: {item}"
+            for item in budget_gate["blockers"]
+        )
     drafts = workspace.get("writer_tasks", [])
     incomplete = [
         item
@@ -114,11 +121,13 @@ def submission_gate(workspace_id: str) -> dict[str, Any]:
         blockers.append(
             f"{len(incomplete)} narrative task(s) not review-ready"
         )
+    blockers = list(dict.fromkeys(blockers))
     return {
         "workspace_id": workspace_id,
         "ready_for_submission": not blockers,
         "blockers": blockers,
         "authoritative_requirements": requirement_gate,
+        "budget_consistency": budget_gate,
         "human_approval_required": True,
         "submission_enabled": False,
     }
