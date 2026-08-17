@@ -7,12 +7,12 @@ ensure_admin_key()
 
 app = FastAPI(
     title="GrantBot Pro Unified",
-    version="20.7.0",
+    version="20.8.0",
     description=(
         "Unified V5-V19 + Master multi-source funding intelligence, "
         "authoritative compliance, financial consistency, evidence-calibrated "
-        "risk, adjudicated human learning, post-award management, and "
-        "application platform."
+        "risk, adjudicated human learning, post-award management, executive "
+        "portfolio command center, and application platform."
     ),
 )
 
@@ -56,6 +56,7 @@ from grantbot.api.risk_intelligence import router as risk_intelligence_router
 from grantbot.api.discovery_campaigns import router as discovery_campaigns_router
 from grantbot.api.review_learning import router as review_learning_router
 from grantbot.api.post_award import router as post_award_router
+from grantbot.api.command_center import router as command_center_router
 
 app.include_router(master_pipeline_v5_router)
 app.include_router(discovery_v6_router)
@@ -80,3 +81,4 @@ app.include_router(risk_intelligence_router)
 app.include_router(discovery_campaigns_router)
 app.include_router(review_learning_router)
 app.include_router(post_award_router)
+app.include_router(command_center_router)
