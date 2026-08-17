@@ -31,7 +31,7 @@ jobs:
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
 
-      - name: Verify unified routes, RBAC, packet integrity, requirements, budgets, risk, discovery, and review learning
+      - name: Verify unified routes, RBAC, packet integrity, requirements, budgets, risk, discovery, review learning, and post-award management
         run: |
           python - <<'PY'
           from grantbot.app import app
@@ -77,6 +77,20 @@ jobs:
               "/master/review-learning/{workspace_id}/history",
               "/master/review-learning/learning/examples",
               "/master/review-learning/learning/profile",
+              "/master/post-award/awards",
+              "/master/post-award/awards/{award_id}",
+              "/master/post-award/awards/{award_id}/dashboard",
+              "/master/post-award/awards/{award_id}/financial-exposure",
+              "/master/post-award/awards/{award_id}/closeout",
+              "/master/post-award/awards/{award_id}/close",
+              "/master/post-award/awards/{award_id}/reports",
+              "/master/post-award/awards/{award_id}/reports/{report_id}",
+              "/master/post-award/awards/{award_id}/metrics",
+              "/master/post-award/awards/{award_id}/metrics/{metric_id}/measurements",
+              "/master/post-award/awards/{award_id}/expenditures",
+              "/master/post-award/awards/{award_id}/compliance-tasks",
+              "/master/post-award/awards/{award_id}/compliance-tasks/{task_id}",
+              "/master/post-award/awards/{award_id}/events",
           }
           missing = required - paths
           if missing:
@@ -114,6 +128,21 @@ jobs:
               ("/master/review-learning/{workspace_id}/history", "get"),
               ("/master/review-learning/learning/examples", "get"),
               ("/master/review-learning/learning/profile", "get"),
+              ("/master/post-award/awards", "post"),
+              ("/master/post-award/awards", "get"),
+              ("/master/post-award/awards/{award_id}", "get"),
+              ("/master/post-award/awards/{award_id}/dashboard", "get"),
+              ("/master/post-award/awards/{award_id}/financial-exposure", "get"),
+              ("/master/post-award/awards/{award_id}/closeout", "get"),
+              ("/master/post-award/awards/{award_id}/close", "post"),
+              ("/master/post-award/awards/{award_id}/reports", "post"),
+              ("/master/post-award/awards/{award_id}/reports/{report_id}", "put"),
+              ("/master/post-award/awards/{award_id}/metrics", "post"),
+              ("/master/post-award/awards/{award_id}/metrics/{metric_id}/measurements", "post"),
+              ("/master/post-award/awards/{award_id}/expenditures", "post"),
+              ("/master/post-award/awards/{award_id}/compliance-tasks", "post"),
+              ("/master/post-award/awards/{award_id}/compliance-tasks/{task_id}", "put"),
+              ("/master/post-award/awards/{award_id}/events", "get"),
           )
           for path, method in protected_paths:
               if not schema["paths"][path][method].get("security"):
@@ -122,7 +151,7 @@ jobs:
                   )
 
           print(
-              "Unified route/RBAC/packet/requirement/budget/risk/discovery/review-learning verification passed: "
+              "Unified route/RBAC/packet/requirement/budget/risk/discovery/review-learning/post-award verification passed: "
               f"{len(paths)} routes"
           )
           PY
