@@ -4,9 +4,22 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "grantbot-pro"
-version = "4.0.0"
-description = "Grant and funding intelligence platform for BrokenGrowthMinistries"
+version = "20.0.0"
+description = "Unified funding intelligence and grant application platform for BrokenGrowthMinistries"
 requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115,<1",
+    "uvicorn[standard]>=0.34,<1",
+    "pydantic>=2.10,<3",
+    "python-multipart>=0.0.20,<1",
+    "requests>=2.31,<3",
+    "python-dotenv>=1.0,<2",
+    "beautifulsoup4>=4.12,<5",
+    "lxml>=5,<7",
+    "pypdf>=5,<7",
+    "python-docx>=1.1,<2",
+    "openpyxl>=3.1,<4",
+]
 
 [project.scripts]
 grantbot = "grantbot.__main__:main"
