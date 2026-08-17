@@ -9,6 +9,8 @@ from unittest.mock import patch
 
 from grantbot.discovery import orchestrator
 from grantbot.discovery import source_health
+from grantbot.discovery.pages import list_pages
+from grantbot.funding.registry import seed_catalog
 
 
 class _FakeBrave:
@@ -79,6 +81,12 @@ class DiscoveryOrchestrationTests(unittest.TestCase):
         else:
             os.environ["GRANTBOT_DATABASE"] = self.old_db
         self.tmp.cleanup()
+
+    def test_fresh_database_page_listing_initializes_schema(self) -> None:
+        seeded = seed_catalog()
+        self.assertGreater(seeded, 0)
+        self.assertEqual(list_pages(), [])
+        self.assertEqual(list_pages("federal_grants_gov"), [])
 
     def test_plan_filters_conditional_and_investable_sources(self) -> None:
         plan = [
