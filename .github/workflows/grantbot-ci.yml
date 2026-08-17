@@ -1,0 +1,53 @@
+name: GrantBot CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: grantbot_pro
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Compile
+        run: python -m compileall -q grantbot tests
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Verify unified routes
+        run: |
+          python - <<'PY'
+          from grantbot.app import app
+          paths = set(app.openapi().get("paths", {}))
+          required = {
+              "/v16/queue/health",
+              "/v17/staging/health",
+              "/v18/writer/{workspace_id}/{task_id}/draft",
+              "/v19/packet/build/{workspace_id}",
+              "/master/health",
+              "/master/system/versions",
+              "/master/budget/calculate",
+              "/master/logic-model/validate",
+          }
+          missing = required - paths
+          if missing:
+              raise SystemExit(f"Missing unified routes: {sorted(missing)}")
+          print(f"Unified route verification passed: {len(paths)} routes")
+          PY
