@@ -96,6 +96,17 @@ jobs:
               "/master/command-center/awards",
               "/master/command-center/deadlines",
               "/master/command-center/risks",
+              "/master/vault/catalog",
+              "/master/vault/documents",
+              "/master/vault/documents/{document_id}",
+              "/master/vault/documents/{document_id}/download",
+              "/master/vault/documents/{document_id}/review",
+              "/master/vault/documents/{document_id}/events",
+              "/master/vault/documents/{document_id}/links",
+              "/master/vault/requirements",
+              "/master/vault/requirements/{requirement_id}/active",
+              "/master/vault/readiness",
+              "/master/vault/packets/{packet_id}/attachments/{document_id}",
           }
           missing = required - paths
           if missing:
@@ -153,6 +164,20 @@ jobs:
               ("/master/command-center/awards", "get"),
               ("/master/command-center/deadlines", "get"),
               ("/master/command-center/risks", "get"),
+              ("/master/vault/catalog", "get"),
+              ("/master/vault/documents", "post"),
+              ("/master/vault/documents", "get"),
+              ("/master/vault/documents/{document_id}", "get"),
+              ("/master/vault/documents/{document_id}/download", "get"),
+              ("/master/vault/documents/{document_id}/review", "post"),
+              ("/master/vault/documents/{document_id}/events", "get"),
+              ("/master/vault/documents/{document_id}/links", "post"),
+              ("/master/vault/documents/{document_id}/links", "get"),
+              ("/master/vault/requirements", "post"),
+              ("/master/vault/requirements", "get"),
+              ("/master/vault/requirements/{requirement_id}/active", "put"),
+              ("/master/vault/readiness", "get"),
+              ("/master/vault/packets/{packet_id}/attachments/{document_id}", "post"),
           )
           for path, method in protected_paths:
               if not schema["paths"][path][method].get("security"):
