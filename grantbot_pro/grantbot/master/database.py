@@ -7,7 +7,7 @@ from typing import Any
 from grantbot.core.database import connection, utc_now
 
 
-MASTER_SCHEMA_VERSION = 1
+MASTER_SCHEMA_VERSION = 2
 
 
 def initialize_master_schema() -> None:
@@ -109,6 +109,68 @@ def initialize_master_schema() -> None:
                     REFERENCES application_packets_v19(packet_id)
                     ON DELETE CASCADE
             );
+
+            CREATE TABLE IF NOT EXISTS canonical_facts (
+                fact_id TEXT PRIMARY KEY,
+                category TEXT NOT NULL,
+                fact_key TEXT NOT NULL,
+                value_json TEXT NOT NULL,
+                fact_type TEXT NOT NULL,
+                verification_state TEXT NOT NULL,
+                source TEXT NOT NULL,
+                source_type TEXT NOT NULL,
+                confidence REAL NOT NULL,
+                notes TEXT NOT NULL,
+                actor TEXT NOT NULL,
+                supersedes_fact_id TEXT NOT NULL,
+                valid_from TEXT NOT NULL,
+                valid_to TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_canonical_facts_current
+                ON canonical_facts(fact_key, valid_to, verification_state);
+
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_canonical_facts_one_current
+                ON canonical_facts(fact_key) WHERE valid_to='';
+
+            CREATE TABLE IF NOT EXISTS master_documents (
+                document_id TEXT PRIMARY KEY,
+                opportunity_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                source_url TEXT NOT NULL,
+                authority_type TEXT NOT NULL,
+                authority_rank INTEGER NOT NULL,
+                pages_json TEXT NOT NULL,
+                sha256 TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_master_documents_dedupe
+                ON master_documents(opportunity_id, sha256);
+
+            CREATE TABLE IF NOT EXISTS master_requirements (
+                requirement_id TEXT PRIMARY KEY,
+                document_id TEXT NOT NULL,
+                opportunity_id TEXT NOT NULL,
+                category TEXT NOT NULL,
+                requirement_level TEXT NOT NULL,
+                text TEXT NOT NULL,
+                page_number INTEGER NOT NULL,
+                section TEXT NOT NULL,
+                authority_type TEXT NOT NULL,
+                authority_rank INTEGER NOT NULL,
+                source_url TEXT NOT NULL,
+                confidence REAL NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(document_id)
+                    REFERENCES master_documents(document_id)
+                    ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_master_requirements_opportunity
+                ON master_requirements(opportunity_id, authority_rank, category);
 
             CREATE TABLE IF NOT EXISTS master_approvals (
                 approval_id TEXT PRIMARY KEY,

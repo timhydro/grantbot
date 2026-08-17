@@ -4,8 +4,9 @@ import importlib.util
 from collections import Counter
 from typing import Any
 
-from grantbot.core.database import health_check
+from grantbot.core.database import health_check, initialize_database
 from grantbot.master.database import feedback_rows, initialize_master_schema
+from grantbot.knowledge.canonical import conflicts as canonical_conflicts, migrate_legacy_facts
 from grantbot.review.staging_v17 import get_workspace, health as staging_health
 
 
@@ -45,13 +46,17 @@ def system_versions() -> dict[str, Any]:
 
 
 def health() -> dict[str, Any]:
+    initialize_database()
     initialize_master_schema()
+    migration = migrate_legacy_facts()
     database = health_check()
     staging = staging_health()
     versions = system_versions()
     return {
         "healthy": bool(database.get("healthy")) and bool(staging.get("healthy", True)),
         "database": database,
+        "canonical_fact_migration": migration,
+        "canonical_fact_conflicts": canonical_conflicts(),
         "staging_v17": staging,
         "versions": versions,
         "human_approval_required": True,
