@@ -5,8 +5,11 @@ from collections import Counter
 from typing import Any
 
 from grantbot.core.database import health_check, initialize_database
+from grantbot.knowledge.canonical import (
+    conflicts as canonical_conflicts,
+    migrate_legacy_facts,
+)
 from grantbot.master.database import feedback_rows, initialize_master_schema
-from grantbot.knowledge.canonical import conflicts as canonical_conflicts, migrate_legacy_facts
 from grantbot.review.staging_v17 import get_workspace, health as staging_health
 
 
@@ -40,7 +43,9 @@ def system_versions() -> dict[str, Any]:
     }
     return {
         "versions": versions,
-        "all_available": all(item["available"] for item in versions.values()),
+        "all_available": all(
+            item["available"] for item in versions.values()
+        ),
         "submission_enabled": False,
     }
 
@@ -53,7 +58,8 @@ def health() -> dict[str, Any]:
     staging = staging_health()
     versions = system_versions()
     return {
-        "healthy": bool(database.get("healthy")) and bool(staging.get("healthy", True)),
+        "healthy": bool(database.get("healthy"))
+        and bool(staging.get("healthy", True)),
         "database": database,
         "canonical_fact_migration": migration,
         "canonical_fact_conflicts": canonical_conflicts(),
@@ -65,29 +71,54 @@ def health() -> dict[str, Any]:
 
 
 def submission_gate(workspace_id: str) -> dict[str, Any]:
+    # Imported lazily to avoid a package initialization cycle:
+    # evidence.repository -> master.database -> master.__init__ -> service.
+    from grantbot.compliance.requirements import requirement_summary
+
     workspace = get_workspace(workspace_id)
     blockers: list[str] = []
+    requirement_gate = requirement_summary(workspace_id)
     if not workspace.get("human_approved"):
         blockers.append("application lacks human approval")
     if workspace.get("stage") != "READY_FOR_SUBMISSION":
         blockers.append("workspace is not READY_FOR_SUBMISSION")
-    open_risks = [item for item in workspace.get("risks", []) if item.get("status") == "OPEN"]
+    open_risks = [
+        item
+        for item in workspace.get("risks", [])
+        if item.get("status") == "OPEN"
+    ]
     if open_risks:
-        blockers.append(f"{len(open_risks)} unresolved compliance risk(s)")
-    pending = [item for item in workspace.get("checklist", []) if item.get("status") == "PENDING"]
+        blockers.append(
+            f"{len(open_risks)} unresolved compliance risk(s)"
+        )
+    pending = [
+        item
+        for item in workspace.get("checklist", [])
+        if item.get("status") == "PENDING"
+    ]
     if pending:
         blockers.append(f"{len(pending)} pending checklist item(s)")
+    if requirement_gate["blocking_count"]:
+        blockers.append(
+            f"{requirement_gate['blocking_count']} unresolved "
+            "authoritative requirement(s)"
+        )
     drafts = workspace.get("writer_tasks", [])
     incomplete = [
-        item for item in drafts
-        if item.get("status") not in {"READY_FOR_REVIEW", "APPROVED"} or not str(item.get("response", "")).strip()
+        item
+        for item in drafts
+        if item.get("status") not in {"READY_FOR_REVIEW", "APPROVED"}
+        or not str(item.get("response", "")).strip()
     ]
     if incomplete:
-        blockers.append(f"{len(incomplete)} narrative task(s) not review-ready")
+        blockers.append(
+            f"{len(incomplete)} narrative task(s) not review-ready"
+        )
     return {
         "workspace_id": workspace_id,
         "ready_for_submission": not blockers,
         "blockers": blockers,
+        "authoritative_requirements": requirement_gate,
         "human_approval_required": True,
         "submission_enabled": False,
     }
@@ -96,9 +127,15 @@ def submission_gate(workspace_id: str) -> dict[str, Any]:
 def learning_profile() -> dict[str, Any]:
     rows = feedback_rows()
     accepted = [row for row in rows if row["accepted"]]
-    tags = Counter(tag for row in accepted for tag in row.get("edit_tags", []))
-    section_counts = Counter(row["section_type"] for row in accepted)
-    funder_counts = Counter(row["funder_archetype"] for row in accepted)
+    tags = Counter(
+        tag for row in accepted for tag in row.get("edit_tags", [])
+    )
+    section_counts = Counter(
+        row["section_type"] for row in accepted
+    )
+    funder_counts = Counter(
+        row["funder_archetype"] for row in accepted
+    )
     scores = [
         float(row["reviewer_score"])
         for row in accepted
@@ -107,8 +144,12 @@ def learning_profile() -> dict[str, Any]:
     return {
         "feedback_count": len(rows),
         "accepted_count": len(accepted),
-        "acceptance_rate": round(len(accepted) / len(rows), 4) if rows else 0.0,
-        "average_reviewer_score": round(sum(scores) / len(scores), 2) if scores else None,
+        "acceptance_rate": (
+            round(len(accepted) / len(rows), 4) if rows else 0.0
+        ),
+        "average_reviewer_score": (
+            round(sum(scores) / len(scores), 2) if scores else None
+        ),
         "common_edit_tags": tags.most_common(10),
         "accepted_sections": section_counts.most_common(),
         "accepted_funder_archetypes": funder_counts.most_common(),
