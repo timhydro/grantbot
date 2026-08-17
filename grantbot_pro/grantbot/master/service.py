@@ -4,7 +4,6 @@ import importlib.util
 from collections import Counter
 from typing import Any
 
-from grantbot.compliance.requirements import requirement_summary
 from grantbot.core.database import health_check, initialize_database
 from grantbot.knowledge.canonical import (
     conflicts as canonical_conflicts,
@@ -72,6 +71,10 @@ def health() -> dict[str, Any]:
 
 
 def submission_gate(workspace_id: str) -> dict[str, Any]:
+    # Imported lazily to avoid a package initialization cycle:
+    # evidence.repository -> master.database -> master.__init__ -> service.
+    from grantbot.compliance.requirements import requirement_summary
+
     workspace = get_workspace(workspace_id)
     blockers: list[str] = []
     requirement_gate = requirement_summary(workspace_id)
