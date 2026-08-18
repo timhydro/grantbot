@@ -4,12 +4,8 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from grantbot.knowledge.profile_v23 import (
-    grant_safe_profile,
-    next_questions,
-    readiness_summary,
-    seed_known_profile,
-)
+from grantbot.knowledge.integrity_v23 import knowledge_status, prepare_canonical_knowledge
+from grantbot.knowledge.profile_v23 import grant_safe_profile, next_questions
 from grantbot.security.auth import ADMIN, GRANT_WRITER, REVIEWER, Principal, require_roles
 
 
@@ -21,7 +17,7 @@ def status(
     principal: Principal = Depends(require_roles(ADMIN, GRANT_WRITER, REVIEWER)),
 ) -> dict[str, Any]:
     del principal
-    return readiness_summary()
+    return knowledge_status()
 
 
 @router.get("/questions")
@@ -50,4 +46,4 @@ def profile(
 def seed(
     principal: Principal = Depends(require_roles(ADMIN)),
 ) -> dict[str, Any]:
-    return seed_known_profile(actor=principal.actor)
+    return prepare_canonical_knowledge(actor=principal.actor)

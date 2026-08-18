@@ -4,7 +4,7 @@ from typing import Any
 
 from grantbot.claims.checker import check_claims
 from grantbot.evidence.repository import list_requirements
-from grantbot.knowledge.canonical import migrate_legacy_facts
+from grantbot.knowledge.integrity_v23 import prepare_canonical_knowledge
 from grantbot.learning.review_learning import (
     approved_examples,
     infer_funder_archetype,
@@ -61,7 +61,7 @@ def _writer_fact(fact: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def _relevant_facts(question: str, limit: int = 24) -> list[dict[str, Any]]:
-    migrate_legacy_facts()
+    prepare_canonical_knowledge(actor="application-writer-v18")
     ranked = rank_facts(question, limit=max(limit * 2, 20), include_unverified=True)
     selected: list[dict[str, Any]] = []
     for fact in ranked:
