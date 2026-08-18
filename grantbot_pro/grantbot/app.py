@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from grantbot import __version__
 from grantbot.security.auth import ensure_admin_key
 
 
@@ -7,7 +8,7 @@ ensure_admin_key()
 
 app = FastAPI(
     title="GrantBot Pro Unified",
-    version="20.9.0",
+    version=__version__,
     description=(
         "Unified V5-V19 + Master multi-source funding intelligence, "
         "authoritative compliance, financial consistency, evidence-calibrated "
