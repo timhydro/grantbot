@@ -1,0 +1,10 @@
+import sys
+
+def main() -> None:
+    print("GrantBot System Active")
+
+if __name__ == "__main__":
+    main()
+
+from grantbot.api.master_pipeline_v5 import router as master_pipeline_v5_router
+app.include_router(master_pipeline_v5_router)

@@ -1,0 +1,32 @@
+{
+  "opportunity_id": "362027",
+  "opportunity_number": "HHS-2026-ACF-ACYF-CY-0159",
+  "title": "FY2026 Runaway Homeless Youth Training, Technical Assistance, and Capacity Building Center (RHYTTAC)",
+  "funder": "Administration for Children & Families - ACYF/FYSB",
+  "acquisition_status": "FULL_TEXT_ACQUIRED",
+  "source_urls": [
+    "https://www.grants.gov/search-results-detail/362027"
+  ],
+  "application_questions": [],
+  "requirements": [],
+  "scoring_criteria": [],
+  "budget_requirements": [],
+  "match_requirements": [],
+  "submission_requirements": [],
+  "required_attachments": [],
+  "eligibility": [
+    "Public and State controlled institutions of higher education",
+    "Private institutions of higher education",
+    "Nonprofits that do not have a 501(c)(3) status with the IRS, other than institutions of higher education",
+    "Nonprofits having a 501(c)(3) status with the IRS, other than institutions of higher education",
+    "Others (see text field entitled \"Additional Information on Eligibility\" for clarification)",
+    "Native American tribal organizations (other than Federally recognized tribal governments)"
+  ],
+  "award_ceiling": 2500000.0,
+  "award_floor": 1800000.0,
+  "cost_sharing": true,
+  "warnings": [
+    "No application questions were extracted from acquired source text."
+  ],
+  "output_path": "/home/mrnobody/grantbot_pro/data/nofo_blueprints/362027/application_blueprint.json"
+}

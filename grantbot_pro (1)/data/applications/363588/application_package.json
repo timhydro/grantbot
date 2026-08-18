@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-08-14T12:00:43.914930+00:00",
+  "missing_information": [],
+  "opportunity": {
+    "amount": 1100000.0,
+    "blockers": [],
+    "deadline": "09/24/2026",
+    "funder": "Bureau of Justice Assistance",
+    "hard_reject": false,
+    "id": "363588",
+    "matched_domains": {
+      "mission_funder_bonus": 10,
+      "reentry": 35,
+      "strong_reentry_bonus": 30
+    },
+    "missing_information": [],
+    "nofo": {
+      "application_questions": [],
+      "blockers": [],
+      "fit_score": 75,
+      "hard_reject": false,
+      "matched_domains": {
+        "mission_funder_bonus": 10,
+        "reentry": 35,
+        "strong_reentry_bonus": 30
+      },
+      "priorities": [
+        "reentry"
+      ],
+      "priority": "MEDIUM",
+      "requirements": [],
+      "writer_handoff": {
+        "fit_score": 75,
+        "funder": "Bureau of Justice Assistance",
+        "grant_title": "BJA FY 2026 Smart Reentry Demonstration Program",
+        "opportunity_number": "",
+        "organization_missing": [],
+        "priorities": [
+          "reentry"
+        ],
+        "priority": "MEDIUM",
+        "questions": [],
+        "requirements": []
+      }
+    },
+    "priority": "MEDIUM",
+    "readiness_score": 70,
+    "score": 75,
+    "source_url": "https://www.grants.gov/search-results-detail/363588",
+    "title": "BJA FY 2026 Smart Reentry Demonstration Program",
+    "writer_packages": []
+  },
+  "output_path": "/home/mrnobody/grantbot_pro/data/applications/363588/application_package.json",
+  "package_id": "363588",
+  "questions": [],
+  "readiness_score": 70,
+  "status": "REVISION_REQUIRED"
+}

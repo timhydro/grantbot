@@ -1,0 +1,32 @@
+{
+  "opportunity_id": "362072",
+  "title": "National Communication System for Runaway and Homeless Youth Program",
+  "funder": "Administration for Children & Families - ACYF/FYSB",
+  "applicant_role": {
+    "role": "DIRECT_APPLICANT",
+    "direct_applicant": true,
+    "partner_candidate": true,
+    "verification_required": false,
+    "blockers": [],
+    "rationale": [
+      "Nonprofit eligibility is explicitly listed."
+    ]
+  },
+  "mission_fit_score": 55,
+  "readiness_score": 55,
+  "competitiveness_score": 55,
+  "burden_score": 20,
+  "final_score": 45,
+  "priority": "LOW",
+  "strengths": [
+    "Broken Growth is classified as a direct applicant."
+  ],
+  "weaknesses": [
+    "Application questions are not yet fully extracted.",
+    "Application requirements are incomplete.",
+    "Scoring/evaluation criteria are not yet available.",
+    "Match/cost-sharing increases application burden."
+  ],
+  "blockers": [],
+  "output_path": "/home/mrnobody/grantbot_pro/data/matching/362072/competitive_match.json"
+}

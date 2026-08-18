@@ -1,0 +1,32 @@
+{
+  "opportunity_id": "362368",
+  "title": "Healthy Homes Production Grant Program",
+  "funder": "Department of Housing and Urban Development",
+  "applicant_role": {
+    "role": "DIRECT_APPLICANT",
+    "direct_applicant": true,
+    "partner_candidate": true,
+    "verification_required": false,
+    "blockers": [],
+    "rationale": [
+      "Nonprofit eligibility is explicitly listed."
+    ]
+  },
+  "mission_fit_score": 55,
+  "readiness_score": 100,
+  "competitiveness_score": 75,
+  "burden_score": 40,
+  "final_score": 55,
+  "priority": "LOW",
+  "strengths": [
+    "Application questions are available for writer handoff.",
+    "Application requirements have been extracted.",
+    "Scoring criteria are available for competitive targeting.",
+    "Broken Growth is classified as a direct applicant."
+  ],
+  "weaknesses": [
+    "Match/cost-sharing increases application burden."
+  ],
+  "blockers": [],
+  "output_path": "/home/mrnobody/grantbot_pro/data/matching/362368/competitive_match.json"
+}

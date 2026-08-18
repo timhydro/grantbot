@@ -1,0 +1,31 @@
+{
+  "opportunity_id": "356629",
+  "title": "GPD Grant Forecast",
+  "funder": "Homeless Providers Grant and Per Diem Program",
+  "applicant_role": {
+    "role": "VERIFY",
+    "direct_applicant": false,
+    "partner_candidate": false,
+    "verification_required": true,
+    "blockers": [],
+    "rationale": [
+      "Direct nonprofit eligibility has not been established."
+    ]
+  },
+  "mission_fit_score": 20,
+  "readiness_score": 55,
+  "competitiveness_score": 36,
+  "burden_score": 0,
+  "final_score": 36,
+  "priority": "VERY_LOW",
+  "strengths": [
+    "Application questions are available for writer handoff."
+  ],
+  "weaknesses": [
+    "Application requirements are incomplete.",
+    "Scoring/evaluation criteria are not yet available.",
+    "Applicant eligibility requires verification."
+  ],
+  "blockers": [],
+  "output_path": "/home/mrnobody/grantbot_pro/data/matching/356629/competitive_match.json"
+}

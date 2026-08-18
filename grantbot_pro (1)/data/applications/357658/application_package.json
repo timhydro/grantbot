@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-08-14T11:56:18.671228+00:00",
+  "missing_information": [],
+  "opportunity": {
+    "amount": 50000.0,
+    "blockers": [],
+    "deadline": "10/19/2026",
+    "funder": "National Institutes of Health",
+    "hard_reject": false,
+    "id": "357658",
+    "matched_domains": {
+      "housing": 20,
+      "reentry": 35
+    },
+    "missing_information": [],
+    "nofo": {
+      "application_questions": [],
+      "blockers": [],
+      "fit_score": 55,
+      "hard_reject": false,
+      "matched_domains": {
+        "housing": 20,
+        "reentry": 35
+      },
+      "priorities": [
+        "reentry",
+        "housing"
+      ],
+      "priority": "LOW",
+      "requirements": [],
+      "writer_handoff": {
+        "fit_score": 55,
+        "funder": "National Institutes of Health",
+        "grant_title": "Limited Competition: Small Grant Program for the NCATS Clinical and Translational Science Award (CTSA) Program (R03 Clinical Trial Optional)",
+        "opportunity_number": "",
+        "organization_missing": [],
+        "priorities": [
+          "reentry",
+          "housing"
+        ],
+        "priority": "LOW",
+        "questions": [],
+        "requirements": []
+      }
+    },
+    "priority": "LOW",
+    "readiness_score": 70,
+    "score": 55,
+    "source_url": "https://www.grants.gov/search-results-detail/357658",
+    "title": "Limited Competition: Small Grant Program for the NCATS Clinical and Translational Science Award (CTSA) Program (R03 Clinical Trial Optional)",
+    "writer_packages": []
+  },
+  "output_path": "/home/mrnobody/grantbot_pro/data/applications/357658/application_package.json",
+  "package_id": "357658",
+  "questions": [],
+  "readiness_score": 70,
+  "status": "REVISION_REQUIRED"
+}

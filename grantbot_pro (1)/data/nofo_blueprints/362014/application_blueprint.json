@@ -1,0 +1,26 @@
+{
+  "opportunity_id": "362014",
+  "opportunity_number": "HSG-2600-DC-0033",
+  "title": "Comprehensive Housing Counseling (CHC) and the Housing Counseling Training (HCT) NOFO (FY2026)",
+  "funder": "Department of Housing and Urban Development",
+  "acquisition_status": "FULL_TEXT_ACQUIRED",
+  "source_urls": [
+    "https://www.grants.gov/search-results-detail/362014",
+    "https://www.hud.gov/program_offices/cfo/gmomgmt/grantsinfo/fundingopps"
+  ],
+  "application_questions": [],
+  "requirements": [],
+  "scoring_criteria": [],
+  "budget_requirements": [],
+  "match_requirements": [],
+  "submission_requirements": [],
+  "required_attachments": [],
+  "eligibility": [],
+  "award_ceiling": null,
+  "award_floor": null,
+  "cost_sharing": null,
+  "warnings": [
+    "No application questions were extracted from acquired source text."
+  ],
+  "output_path": "/home/mrnobody/grantbot_pro/data/nofo_blueprints/362014/application_blueprint.json"
+}

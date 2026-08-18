@@ -1,0 +1,42 @@
+{
+  "opportunity_id": "363588",
+  "title": "BJA FY 2026 Smart Reentry Demonstration Program",
+  "funder": "Bureau of Justice Assistance",
+  "applicant_role": {
+    "role": "PARTNER_OR_SUBRECIPIENT",
+    "direct_applicant": false,
+    "partner_candidate": true,
+    "verification_required": true,
+    "blockers": [],
+    "rationale": [
+      "Government or tribal applicants are explicitly listed.",
+      "The Others category requires additional eligibility verification.",
+      "Broken Growth should pursue this opportunity through an eligible prime applicant unless direct eligibility is verified."
+    ]
+  },
+  "cost_sharing": true,
+  "readiness_score": 75,
+  "missing_information": [
+    "Verify official NOFO clarification for the 'Others' eligibility category",
+    "Confirm prime applicant match/cost-sharing plan and Broken Growth contribution, if any"
+  ],
+  "recommended_prime_types": [
+    "County government",
+    "City or township government",
+    "State government",
+    "Special district government",
+    "Eligible tribal government"
+  ],
+  "proposed_bgm_role": [
+    "Reentry-focused housing stability and supportive housing services",
+    "Employment placement, workforce development, and job-readiness support",
+    "Case management and resource navigation",
+    "Mentorship, life-skills development, and supportive-community programming",
+    "Participant transition and stabilization support",
+    "Outcome tracking for housing stability, employment retention, and successful reentry"
+  ],
+  "package_path": "/home/mrnobody/grantbot_pro/data/partner_packages/363588/partner_package.json",
+  "concept_summary_path": "/home/mrnobody/grantbot_pro/data/partner_packages/363588/concept_summary.md",
+  "scope_of_work_path": "/home/mrnobody/grantbot_pro/data/partner_packages/363588/scope_of_work.md",
+  "outreach_pitch_path": "/home/mrnobody/grantbot_pro/data/partner_packages/363588/outreach_pitch.md"
+}

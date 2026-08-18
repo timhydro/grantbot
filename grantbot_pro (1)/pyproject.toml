@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "grantbot-pro"
+version = "4.0.0"
+description = "Grant and funding intelligence platform for BrokenGrowthMinistries"
+requires-python = ">=3.10"
+
+[project.scripts]
+grantbot = "grantbot.__main__:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

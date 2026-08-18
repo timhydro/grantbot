@@ -1,0 +1,30 @@
+{
+  "opportunity_id": "361994",
+  "title": "Resident Opportunity and Self-Sufficiency Service Coordinator (ROSS-SC) Program &ndash; Fiscal Year 2026",
+  "funder": "Department of Housing and Urban Development",
+  "applicant_role": {
+    "role": "VERIFY",
+    "direct_applicant": false,
+    "partner_candidate": false,
+    "verification_required": true,
+    "blockers": [],
+    "rationale": [
+      "Direct nonprofit eligibility has not been established."
+    ]
+  },
+  "mission_fit_score": 20,
+  "readiness_score": 35,
+  "competitiveness_score": 27,
+  "burden_score": 0,
+  "final_score": 27,
+  "priority": "VERY_LOW",
+  "strengths": [],
+  "weaknesses": [
+    "Application questions are not yet fully extracted.",
+    "Application requirements are incomplete.",
+    "Scoring/evaluation criteria are not yet available.",
+    "Applicant eligibility requires verification."
+  ],
+  "blockers": [],
+  "output_path": "/home/mrnobody/grantbot_pro/data/matching/361994/competitive_match.json"
+}

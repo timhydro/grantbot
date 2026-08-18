@@ -1,0 +1,31 @@
+{
+  "opportunity_id": "362364",
+  "title": "Authority to Accept Unsolicited Proposals for Research Partnerships Notice of Intent (NOI)",
+  "funder": "Department of Housing and Urban Development",
+  "applicant_role": {
+    "role": "VERIFY",
+    "direct_applicant": false,
+    "partner_candidate": false,
+    "verification_required": true,
+    "blockers": [],
+    "rationale": [
+      "Direct nonprofit eligibility has not been established."
+    ]
+  },
+  "mission_fit_score": 40,
+  "readiness_score": 35,
+  "competitiveness_score": 38,
+  "burden_score": 20,
+  "final_score": 28,
+  "priority": "VERY_LOW",
+  "strengths": [],
+  "weaknesses": [
+    "Application questions are not yet fully extracted.",
+    "Application requirements are incomplete.",
+    "Scoring/evaluation criteria are not yet available.",
+    "Applicant eligibility requires verification.",
+    "Match/cost-sharing increases application burden."
+  ],
+  "blockers": [],
+  "output_path": "/home/mrnobody/grantbot_pro/data/matching/362364/competitive_match.json"
+}

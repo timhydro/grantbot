@@ -1,0 +1,24 @@
+{
+  "opportunity_id": "100",
+  "competitive_score": 16,
+  "compliance_score": 25,
+  "budget_score": 65,
+  "outcomes_score": 75,
+  "final_readiness_score": 37,
+  "status": "NOT_READY",
+  "missing_items": [
+    "Complete application-question set",
+    "Complete application-requirement set",
+    "Budget instructions",
+    "Submission instructions",
+    "Outcome/performance-measure requirements"
+  ],
+  "compliance_risks": [
+    "Applicant eligibility still requires verification."
+  ],
+  "budget_requirements": [],
+  "outcome_requirements": [],
+  "required_attachments": [],
+  "submission_requirements": [],
+  "output_path": "/home/mrnobody/grantbot_pro/data/compliance/100/readiness_v15.json"
+}

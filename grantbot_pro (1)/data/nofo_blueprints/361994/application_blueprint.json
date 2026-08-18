@@ -1,0 +1,26 @@
+{
+  "opportunity_id": "361994",
+  "opportunity_number": "PIH-2600-DC-0005",
+  "title": "Resident Opportunity and Self-Sufficiency Service Coordinator (ROSS-SC) Program &ndash; Fiscal Year 2026",
+  "funder": "Department of Housing and Urban Development",
+  "acquisition_status": "FULL_TEXT_ACQUIRED",
+  "source_urls": [
+    "https://www.grants.gov/search-results-detail/361994",
+    "https://www.hud.gov/program_offices/spm/gmomgmt/grantsinfo/fundingopps"
+  ],
+  "application_questions": [],
+  "requirements": [],
+  "scoring_criteria": [],
+  "budget_requirements": [],
+  "match_requirements": [],
+  "submission_requirements": [],
+  "required_attachments": [],
+  "eligibility": [],
+  "award_ceiling": null,
+  "award_floor": null,
+  "cost_sharing": null,
+  "warnings": [
+    "No application questions were extracted from acquired source text."
+  ],
+  "output_path": "/home/mrnobody/grantbot_pro/data/nofo_blueprints/361994/application_blueprint.json"
+}

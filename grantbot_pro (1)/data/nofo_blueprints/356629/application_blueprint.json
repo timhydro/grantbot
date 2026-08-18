@@ -1,0 +1,30 @@
+{
+  "opportunity_id": "356629",
+  "opportunity_number": "VA-GPD-FORECAST-FY2026-FY2028",
+  "title": "GPD Grant Forecast",
+  "funder": "Homeless Providers Grant and Per Diem Program",
+  "acquisition_status": "FULL_TEXT_ACQUIRED",
+  "source_urls": [
+    "https://www.grants.gov/search-results-detail/356629",
+    "https://www.va.gov/HOMELESS/docs/GPD/FactSheet-GPDGrantFundingTypes-July2022.pdf"
+  ],
+  "application_questions": [
+    "Since 1994, the GPD Program has awarded grants to community-based organizations to provide",
+    "• Per Diem Only grants provide funding in the form of per diem payments to reimburse grantees",
+    "• GPD grantees provide clinically focused treatment and services to help Veterans secure"
+  ],
+  "requirements": [],
+  "scoring_criteria": [],
+  "budget_requirements": [],
+  "match_requirements": [],
+  "submission_requirements": [
+    "• www.GRANTS.gov"
+  ],
+  "required_attachments": [],
+  "eligibility": [],
+  "award_ceiling": null,
+  "award_floor": null,
+  "cost_sharing": null,
+  "warnings": [],
+  "output_path": "/home/mrnobody/grantbot_pro/data/nofo_blueprints/356629/application_blueprint.json"
+}
