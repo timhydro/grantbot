@@ -57,7 +57,7 @@ backups/
 *(2).*
 
 # GrantBot generated queues / exports
- grantbot_pro/data/cache/
+grantbot_pro/data/cache/
 grantbot_pro/data/live_queue_v16/
 grantbot_pro/data/partner_queue/
 grantbot_pro/data/review_queue/
