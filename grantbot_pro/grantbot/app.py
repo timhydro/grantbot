@@ -10,11 +10,11 @@ app = FastAPI(
     title="GrantBot Pro Unified",
     version=__version__,
     description=(
-        "Unified funding intelligence, local AI grant writing, authoritative "
-        "compliance, financial consistency, evidence-calibrated risk, "
-        "adjudicated human learning, post-award management, executive portfolio "
-        "command center, controlled organizational document vault, and "
-        "application platform."
+        "Unified funding intelligence, mission-aware discovery ranking, local AI "
+        "grant writing, authoritative compliance, financial consistency, "
+        "evidence-calibrated risk, adjudicated human learning, post-award "
+        "management, executive portfolio command center, controlled organizational "
+        "document vault, and application platform."
     ),
 )
 
@@ -61,6 +61,7 @@ from grantbot.api.post_award import router as post_award_router
 from grantbot.api.command_center import router as command_center_router
 from grantbot.api.document_vault import router as document_vault_router
 from grantbot.api.local_ai_v21 import router as local_ai_v21_router
+from grantbot.api.discovery_quality_v22 import router as discovery_quality_v22_router
 
 app.include_router(master_pipeline_v5_router)
 app.include_router(discovery_v6_router)
@@ -88,3 +89,4 @@ app.include_router(post_award_router)
 app.include_router(command_center_router)
 app.include_router(document_vault_router)
 app.include_router(local_ai_v21_router)
+app.include_router(discovery_quality_v22_router)
