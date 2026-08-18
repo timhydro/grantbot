@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "grantbot-pro"
-version = "20.1.0"
+version = "20.9.0"
 description = "Unified funding intelligence and grant application platform for BrokenGrowthMinistries"
 requires-python = ">=3.10"
 dependencies = [
