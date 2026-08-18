@@ -10,25 +10,28 @@ from grantbot.knowledge.question_bank import QUESTIONS
 
 TRUST_RANK = {"MISSING": 0, "UNVERIFIED": 1, "APPROVED": 2, "VERIFIED": 3}
 
+# These keys intentionally match the current question bank. Planning context does
+# not satisfy a critical item; only APPROVED/VERIFIED facts do.
 CRITICAL_WEIGHTS = {
     "legal_name": 100,
     "ein": 100,
     "tax_exempt_status": 100,
     "annual_budget": 95,
     "sam": 95,
-    "sam_registration": 95,
     "uei": 95,
     "grants_gov": 95,
-    "grants_gov_registration": 95,
     "financial_controls": 90,
+    "financial_statements": 90,
     "current_people_served": 90,
     "annual_people_served": 90,
     "eligibility_requirements": 88,
     "program_names": 85,
-    "program_descriptions": 85,
-    "current_funding": 85,
+    "program_model": 85,
+    "revenue_sources": 85,
     "board_members": 82,
-    "mailing_address": 80,
+    "property_status": 80,
+    "matching_funds": 80,
+    "employer_partners": 78,
 }
 
 QUESTION_ALIASES: dict[str, tuple[str, ...]] = {
@@ -214,7 +217,7 @@ KNOWN_PROFILE: tuple[dict[str, Any], ...] = (
         confidence=0.85,
     ),
     _row(
-        "outcomes",
+        "population",
         "projected_people_served",
         "First-year planning target of 30 to 50 participants",
         state="UNVERIFIED",
@@ -298,10 +301,14 @@ def seed_known_profile(*, actor: str = "knowledge-v23-seed") -> dict[str, Any]:
             new_state = str(candidate["verification_state"]).upper()
             old_value = current.get("value")
             new_value = candidate["value"]
-            if _stable(old_value) == _stable(new_value):
+            old_rank = TRUST_RANK.get(old_state, 0)
+            new_rank = TRUST_RANK.get(new_state, 0)
+            same_value = _stable(old_value) == _stable(new_value)
+
+            if same_value and old_rank >= new_rank:
                 skipped += 1
                 continue
-            if TRUST_RANK.get(old_state, 0) >= TRUST_RANK.get(new_state, 0) and _has_value(old_value):
+            if not same_value and old_rank >= new_rank and _has_value(old_value):
                 conflicts.append({
                     "fact_key": key,
                     "existing_value": old_value,
@@ -343,8 +350,8 @@ def question_statuses() -> list[QuestionStatus]:
     facts = _index()
     output: list[QuestionStatus] = []
     for question in QUESTIONS:
-        matched_key = None
-        matched = None
+        matched_key: str | None = None
+        matched: dict[str, Any] | None = None
         for key in QUESTION_ALIASES.get(question.key, (question.key,)):
             candidate = facts.get(key)
             if candidate is not None and _has_value(candidate.get("value")):
@@ -394,16 +401,19 @@ def readiness_summary() -> dict[str, Any]:
     answered = sum(item.state == "ANSWERED" for item in statuses)
     planning = sum(item.state == "PLANNING_CONTEXT" for item in statuses)
     missing = sum(item.state == "MISSING" for item in statuses)
-    total = len(statuses)
 
     weighted_total = sum(CRITICAL_WEIGHTS.values())
-    missing_keys = {item.fact_key for item in statuses if item.state != "ANSWERED"}
-    weighted_missing = sum(weight for key, weight in CRITICAL_WEIGHTS.items() if key in missing_keys)
-    score = 0.0 if weighted_total == 0 else round(100 * (1 - weighted_missing / weighted_total), 1)
+    pending_keys = {item.fact_key for item in statuses if item.state != "ANSWERED"}
+    weighted_pending = sum(
+        weight for key, weight in CRITICAL_WEIGHTS.items() if key in pending_keys
+    )
+    score = 0.0 if weighted_total == 0 else round(
+        100 * (1 - weighted_pending / weighted_total), 1
+    )
 
     return {
         "version": "23.0",
-        "question_bank_size": total,
+        "question_bank_size": len(statuses),
         "answered": answered,
         "planning_context": planning,
         "missing": missing,
