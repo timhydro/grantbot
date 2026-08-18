@@ -92,7 +92,7 @@ class Settings:
 
     ollama_enabled: bool = env_bool(
         "OLLAMA_ENABLED",
-        False,
+        True,
     )
 
     ollama_url: str = os.getenv(
@@ -102,7 +102,7 @@ class Settings:
 
     ollama_model: str = os.getenv(
         "OLLAMA_MODEL",
-        "llama3.2",
+        "llama3.2:3b",
     )
 
     @property

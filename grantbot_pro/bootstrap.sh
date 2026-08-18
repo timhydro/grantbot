@@ -4,9 +4,38 @@ set -Eeuo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 
+WITH_LOCAL_AI=0
+
+usage() {
+    cat <<'EOF'
+Usage: bash bootstrap.sh [--with-local-ai]
+
+Options:
+  --with-local-ai  Install/verify Ollama and the configured free local model.
+  -h, --help       Show this help.
+EOF
+}
+
+for arg in "$@"; do
+    case "$arg" in
+        --with-local-ai)
+            WITH_LOCAL_AI=1
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "ERROR: Unknown argument: $arg"
+            usage
+            exit 2
+            ;;
+    esac
+done
+
 echo
 echo "============================================"
-echo " GRANTBOT PRO BOOTSTRAP"
+echo " GRANTBOT PRO 21 BOOTSTRAP"
 echo "============================================"
 echo
 
@@ -21,57 +50,64 @@ if [ ! -d ".venv" ]; then
     if ! python3 -m venv .venv; then
         echo
         echo "Python venv support is missing."
-        echo
         echo "On Debian/Chromebook Linux run:"
-        echo
         echo "sudo apt update && sudo apt install -y python3-venv"
-        echo
         exit 1
     fi
 fi
 
 echo
-echo "Upgrading pip..."
-.venv/bin/python -m pip install \
-    --upgrade \
-    pip \
-    setuptools \
-    wheel
+echo "Upgrading packaging tools..."
+.venv/bin/python -m pip install --upgrade pip setuptools wheel
 
 echo
 echo "Installing GrantBot dependencies..."
-.venv/bin/pip install \
-    -r requirements.txt
+.venv/bin/pip install -r requirements.txt
+
+echo
+echo "Installing GrantBot itself in editable mode..."
+.venv/bin/pip install -e .
 
 echo
 echo "Compiling source..."
-.venv/bin/python \
-    -m compileall \
-    -q \
-    grantbot \
-    tests
+.venv/bin/python -m compileall -q grantbot tests
 
 echo
-echo "Initializing database..."
-PYTHONPATH="$ROOT" \
-.venv/bin/python \
-    -m grantbot init
+echo "Initializing database and directories..."
+PYTHONPATH="$ROOT" .venv/bin/python -m grantbot init
 
 echo
-echo "Running tests..."
-PYTHONPATH="$ROOT" \
-.venv/bin/python \
-    -m pytest \
-    tests/test_core.py \
-    -q
+echo "Running complete GrantBot test suite..."
+PYTHONPATH="$ROOT" .venv/bin/python -m pytest -q
+
+if [ "$WITH_LOCAL_AI" -eq 1 ]; then
+    echo
+echo "Installing/verifying free local AI..."
+    bash "$ROOT/setup_local_ai.sh"
+else
+    echo
+echo "Checking local AI status (non-fatal)..."
+    PYTHONPATH="$ROOT" .venv/bin/python - <<'PY'
+import json
+from grantbot.writing.ollama_provider import OllamaProvider
+
+print(json.dumps(OllamaProvider().health(), indent=2, sort_keys=True))
+PY
+fi
 
 echo
-echo "Running diagnostics..."
-PYTHONPATH="$ROOT" \
-.venv/bin/python \
-    -m grantbot status
+echo "Running GrantBot diagnostics..."
+PYTHONPATH="$ROOT" .venv/bin/python -m grantbot status
 
 echo
 echo "============================================"
-echo " MODULE 01 FOUNDATION READY"
+echo " GRANTBOT PRO 21 READY"
 echo "============================================"
+echo
+echo "Launch API:"
+echo "  bash run_grantbot.sh"
+if [ "$WITH_LOCAL_AI" -ne 1 ]; then
+    echo
+echo "To install/verify the free local writer later:"
+    echo "  bash setup_local_ai.sh"
+fi

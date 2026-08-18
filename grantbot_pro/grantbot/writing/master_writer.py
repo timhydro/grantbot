@@ -10,6 +10,7 @@ from grantbot.writing.quality_gate import evaluate_draft
 
 TRUSTED = {"VERIFIED", "APPROVED"}
 PLANNING = {"DRAFT"}
+MAX_REVISION_ATTEMPTS = 2
 
 SECTION_STRATEGIES = {
     "executive_summary": "Lead with mission fit, problem, intervention, credibility, and investment case.",
@@ -37,6 +38,7 @@ class WriterResult:
     quality: dict[str, Any] | None
     provider: str
     model: str
+    revision_attempts: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -116,7 +118,7 @@ You are the senior grant strategist for BrokenGrowthMinistries with doctoral-lev
 
 Write the strongest truthful, funder-aligned response supported by the record.
 
-Use ethos through credibility, pathos through dignified human stakes, and logos through implementation logic and responsible resource use. Frame funding as a high-value community investment when facts support that framing. Use precise, vivid language without exaggeration.
+Use ethos through credibility, pathos through dignified human stakes, and logos through implementation logic and responsible resource use. Frame funding as a high-value community investment when facts support that framing. Use precise, vivid language without exaggeration, coercion, hidden persuasion, or fabricated certainty.
 
 VERIFIED and APPROVED facts may be stated as facts.
 DRAFT facts are planning context only and must remain prospective.
@@ -126,6 +128,36 @@ Never invent statistics, budgets, outcomes, partnerships, beneficiary counts, ho
 Human-approved reference examples are STYLE AND STRUCTURE GUIDANCE ONLY. They are never factual evidence for the current application. Never copy a name, number, outcome, partnership, date, location, budget, or organization-specific claim from a reference example unless that same claim is independently supported in the current TRUSTED FACTS or PLANNING CONTEXT.
 
 Return only the final grant narrative.
+""".strip()
+
+
+def _revision_prompt(
+    *,
+    original_prompt: str,
+    draft: str,
+    issues: list[str],
+) -> str:
+    issue_block = "\n".join(f"- {item}" for item in issues) or "- Improve precision and directness."
+    return f"""
+Revise the draft below into a stronger submission-ready answer.
+
+QUALITY GATE ISSUES TO FIX:
+{issue_block}
+
+MANDATORY REVISION RULES:
+- Preserve only claims supported by the supplied facts and planning context.
+- Remove every unsupported number, amount, percentage, date, count, or outcome.
+- Stay within the word limit when one is supplied.
+- Directly answer the funder's question.
+- Address the supplied funder priorities naturally and specifically.
+- Do not add facts that are absent from the source record.
+- Return only the revised narrative.
+
+ORIGINAL SOURCE PROMPT:
+{original_prompt}
+
+DRAFT TO REVISE:
+{draft}
 """.strip()
 
 
@@ -145,6 +177,8 @@ def write_answer(
 ) -> WriterResult:
     if not question.strip():
         raise ValueError("question cannot be empty")
+    if max_words is not None and max_words < 1:
+        raise ValueError("max_words must be positive")
 
     section = section.strip().lower() or "general"
     if section not in SECTION_STRATEGIES:
@@ -165,6 +199,7 @@ def write_answer(
             None,
             "ollama",
             active.config.model,
+            0,
         )
 
     priorities = [p.strip() for p in (priorities or []) if p.strip()]
@@ -213,6 +248,27 @@ Write only the final submission-quality narrative. Use the reference material on
         required_terms=priorities,
     )
 
+    revision_attempts = 0
+    while not quality.passed and revision_attempts < MAX_REVISION_ATTEMPTS:
+        revision_attempts += 1
+        draft = active.generate(
+            _revision_prompt(
+                original_prompt=prompt,
+                draft=draft,
+                issues=quality.issues,
+            ),
+            system=_system(),
+            temperature=0.15,
+        )
+        quality = evaluate_draft(
+            question=question,
+            draft=draft,
+            facts=trusted + planning,
+            max_words=max_words,
+            required_terms=priorities,
+        )
+
+    model = getattr(active, "last_model", "") or active.config.model
     return WriterResult(
         "READY_FOR_HUMAN_REVIEW" if quality.passed else "REVISION_REQUIRED",
         section,
@@ -223,5 +279,6 @@ Write only the final submission-quality narrative. Use the reference material on
         missing,
         quality.to_dict(),
         "ollama",
-        active.config.model,
+        model,
+        revision_attempts,
     )
