@@ -6,7 +6,7 @@ import json
 from grantbot import __version__
 from grantbot.core.database import backup_database, initialize_database
 from grantbot.core.diagnostics import system_status
-from grantbot.knowledge.profile_v23 import readiness_summary, seed_known_profile
+from grantbot.knowledge.integrity_v23 import knowledge_status, prepare_canonical_knowledge
 
 
 def pretty(value):
@@ -30,31 +30,17 @@ def build_parser():
 
     commands = parser.add_subparsers(dest="command")
 
-    commands.add_parser(
-        "status",
-        help="Run complete GrantBot diagnostics.",
-    )
-
+    commands.add_parser("status", help="Run complete GrantBot diagnostics.")
     commands.add_parser(
         "init",
-        help="Initialize database, directories, and canonical organization knowledge.",
+        help="Initialize database, directories, canonical knowledge, and safe legacy migration.",
     )
-
     commands.add_parser(
         "knowledge",
-        help="Show canonical knowledge readiness and the next questions that matter.",
+        help="Show canonical knowledge readiness, integrity, and next questions.",
     )
-
-    commands.add_parser(
-        "backup",
-        help="Backup the GrantBot database.",
-    )
-
-    commands.add_parser(
-        "tree",
-        help="Display the GrantBot project structure.",
-    )
-
+    commands.add_parser("backup", help="Backup the GrantBot database.")
+    commands.add_parser("tree", help="Display the GrantBot project structure.")
     return parser
 
 
@@ -64,26 +50,29 @@ def main():
 
     if args.command == "init":
         initialize_database()
-        seed_result = seed_known_profile(actor="cli-init")
+        preparation = prepare_canonical_knowledge(actor="cli-init")
         pretty({
             "status": "GrantBot core initialized",
             "version": __version__,
-            "knowledge_seed": seed_result,
-            "knowledge_readiness": readiness_summary(),
+            "knowledge_preparation": preparation,
+            "knowledge_readiness": knowledge_status(),
         })
         return
 
     if args.command == "status":
         initialize_database()
         payload = system_status()
-        payload["knowledge_v23"] = readiness_summary()
+        payload["knowledge_v23"] = knowledge_status()
         pretty(payload)
         return
 
     if args.command == "knowledge":
         initialize_database()
-        seed_known_profile(actor="cli-knowledge")
-        pretty(readiness_summary())
+        preparation = prepare_canonical_knowledge(actor="cli-knowledge")
+        pretty({
+            "preparation": preparation,
+            "status": knowledge_status(),
+        })
         return
 
     if args.command == "backup":
