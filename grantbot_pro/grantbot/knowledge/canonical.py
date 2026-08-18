@@ -34,6 +34,13 @@ ACTIVE_VERIFICATION_STATES = {
     "MISSING",
 }
 
+TRUST_RANK = {
+    "MISSING": 0,
+    "UNVERIFIED": 1,
+    "APPROVED": 2,
+    "VERIFIED": 3,
+}
+
 
 def _validate(value: str, allowed: set[str], label: str) -> str:
     clean = value.strip().upper()
@@ -164,7 +171,7 @@ def current_facts(
     sql += " ORDER BY category, fact_key"
     with connection() as conn:
         rows = conn.execute(sql, tuple(params)).fetchall()
-    output = []
+    output: list[dict[str, Any]] = []
     for row in rows:
         item = dict(row)
         try:
@@ -175,14 +182,36 @@ def current_facts(
     return output
 
 
+def _stable(value: Any) -> str:
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, default=str)
+
+
+def _legacy_mapping(status: str) -> tuple[str, str]:
+    normalized = status.strip().upper()
+    if normalized == "APPROVED":
+        return "USER_PROVIDED_FACT", "APPROVED"
+    if normalized == "VERIFIED":
+        return "VERIFIED_FACT", "VERIFIED"
+    if normalized == "DRAFT":
+        return "REASONABLE_PROJECTION", "UNVERIFIED"
+    return "MISSING_INFORMATION", "MISSING"
+
+
 def migrate_legacy_facts() -> dict[str, int]:
+    """Migrate legacy rows without downgrading newer canonical knowledge.
+
+    A legacy row may create a missing canonical key or upgrade the same value to a
+    higher trust state. It may not replace a different value at equal or higher
+    canonical trust. This makes migration safe to call repeatedly from the writer.
+    """
+
     initialize_master_schema()
     with connection() as conn:
         table = conn.execute(
             "SELECT 1 FROM sqlite_master WHERE type='table' AND name='facts'"
         ).fetchone()
         if table is None:
-            return {"migrated": 0, "skipped": 0}
+            return {"migrated": 0, "skipped": 0, "preserved": 0}
         legacy = conn.execute(
             """
             SELECT id, category, fact_key, value, status, source, confidence, notes
@@ -193,31 +222,42 @@ def migrate_legacy_facts() -> dict[str, int]:
         source_rows = conn.execute(
             "SELECT source FROM canonical_facts WHERE source LIKE 'legacy_fact:%'"
         ).fetchall()
+
     existing_sources = {str(row["source"]) for row in source_rows}
+    current = {str(item["fact_key"]): item for item in current_facts()}
     migrated = 0
     skipped = 0
+    preserved = 0
+
     for row in legacy:
         legacy_source = f"legacy_fact:{row['id']}"
         if legacy_source in existing_sources:
             skipped += 1
             continue
-        status = str(row["status"]).upper()
-        if status == "APPROVED":
-            fact_type = "USER_PROVIDED_FACT"
-            state = "APPROVED"
-        elif status == "VERIFIED":
-            fact_type = "VERIFIED_FACT"
-            state = "VERIFIED"
-        elif status == "DRAFT":
-            fact_type = "REASONABLE_PROJECTION"
-            state = "UNVERIFIED"
-        else:
-            fact_type = "MISSING_INFORMATION"
-            state = "MISSING"
-        set_fact(
+
+        fact_type, state = _legacy_mapping(str(row["status"]))
+        key = str(row["fact_key"]).strip().lower()
+        candidate_value = row["value"]
+        active = current.get(key)
+
+        if active is not None:
+            active_state = str(active.get("verification_state", "MISSING")).upper()
+            active_rank = TRUST_RANK.get(active_state, 0)
+            candidate_rank = TRUST_RANK.get(state, 0)
+            active_value = active.get("value")
+            same_value = _stable(active_value) == _stable(candidate_value)
+
+            if same_value and active_rank >= candidate_rank:
+                skipped += 1
+                continue
+            if not same_value and active_value not in (None, "", [], {}) and active_rank >= candidate_rank:
+                preserved += 1
+                continue
+
+        saved = set_fact(
             category=str(row["category"]),
-            fact_key=str(row["fact_key"]),
-            value=row["value"],
+            fact_key=key,
+            value=candidate_value,
             fact_type=fact_type,
             verification_state=state,
             source=legacy_source,
@@ -226,8 +266,11 @@ def migrate_legacy_facts() -> dict[str, int]:
             notes=str(row["notes"] or ""),
             actor="legacy-migration",
         )
+        current[key] = saved
+        existing_sources.add(legacy_source)
         migrated += 1
-    return {"migrated": migrated, "skipped": skipped}
+
+    return {"migrated": migrated, "skipped": skipped, "preserved": preserved}
 
 
 def conflicts() -> list[dict[str, Any]]:
