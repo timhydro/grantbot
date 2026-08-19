@@ -179,7 +179,10 @@ def run_live_discovery(
     analyzed_rows: list[dict[str, Any]] = []
     dedupe: set[tuple[str, str]] = set()
 
-    for row in plan[:maximum_queries]:
+    for row in plan:
+        if executed >= maximum_queries:
+            break
+
         source_key = str(row["source_key"])
         adapter = _adapter_for(source_key)
         if adapter is None:
