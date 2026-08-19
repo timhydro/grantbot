@@ -57,6 +57,7 @@ from grantbot.api.document_vault import router as document_vault_router
 from grantbot.api.local_ai_v21 import router as local_ai_v21_router
 from grantbot.api.discovery_quality_v22 import router as discovery_quality_v22_router
 from grantbot.api.knowledge_v23 import router as knowledge_v23_router
+from grantbot.api.funding_live_v24 import router as funding_live_v24_router
 
 app.include_router(master_pipeline_v5_router)
 app.include_router(discovery_v6_router)
@@ -86,3 +87,4 @@ app.include_router(document_vault_router)
 app.include_router(local_ai_v21_router)
 app.include_router(discovery_quality_v22_router)
 app.include_router(knowledge_v23_router)
+app.include_router(funding_live_v24_router)
