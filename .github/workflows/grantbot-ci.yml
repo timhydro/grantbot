@@ -44,6 +44,8 @@ jobs:
               "/v18/writer/{workspace_id}/{task_id}/draft",
               "/v19/packet/build/{workspace_id}",
               "/v19/packet/{packet_id}/integrity",
+              "/v24/funding/health",
+              "/v24/funding/discover",
               "/master/health",
               "/master/system/versions",
               "/master/budget/calculate",
