@@ -1,0 +1,77 @@
+{
+  "project": "Broken Growth Ministries Pallet Village",
+  "location": "301 Cain Ave, Pensacola, FL 32514",
+  "status": "PLANNING_ESTIMATE",
+  "updated": "2026-08-19",
+  "land_acquisition_included": false,
+  "important_note": "All values are planning allowances, not contractor or vendor quotes. Zoning, unit count, utilities, stormwater, site engineering, building classification, and Pallet pricing require verification.",
+  "public_benchmark": {
+    "source": "City of Pensacola Pallet Shelter Program / June 2026 update",
+    "public_funding": 1011000,
+    "reported_shelter_count": 27,
+    "calculated_public_funding_per_shelter_equivalent": 37444.44,
+    "warning": "This is not a Pallet PBC unit price. City funding supported shelters and related resources."
+  },
+  "scenarios": {
+    "12_shelter_target": {
+      "shelter_count": 12,
+      "line_items": {
+        "pallet_shelter_vendor_allowance": 420000,
+        "communal_hygiene_laundry_building": 140000,
+        "survey_civil_structural_architectural_engineering": 60000,
+        "zoning_development_building_trade_permits_allowance": 15000,
+        "water_sewer_electrical_trenching_distribution": 150000,
+        "site_work_drainage_fire_access_parking_ada_walkways": 150000,
+        "fencing_lighting_security_landscaping": 35000,
+        "furnishings_equipment_startup": 25000
+      },
+      "base_total": 995000,
+      "contingency_percent": 15,
+      "contingency_amount": 149250,
+      "target_capital_total": 1144250
+    },
+    "14_shelter_maximum_density_test": {
+      "shelter_count": 14,
+      "line_items": {
+        "pallet_shelter_vendor_allowance": 490000,
+        "communal_hygiene_laundry_building": 150000,
+        "survey_civil_structural_architectural_engineering": 65000,
+        "zoning_development_building_trade_permits_allowance": 15000,
+        "water_sewer_electrical_trenching_distribution": 170000,
+        "site_work_drainage_fire_access_parking_ada_walkways": 165000,
+        "fencing_lighting_security_landscaping": 40000,
+        "furnishings_equipment_startup": 30000
+      },
+      "base_total": 1125000,
+      "contingency_percent": 15,
+      "contingency_amount": 168750,
+      "target_capital_total": 1293750
+    }
+  },
+  "investor_ranges": {
+    "lean_with_major_in_kind_support": {
+      "low": 700000,
+      "high": 850000
+    },
+    "realistic_turnkey_12_to_14_units": {
+      "low": 1000000,
+      "high": 1300000
+    },
+    "conservative_high_case_with_site_surprises_and_launch_reserve": {
+      "low": 1400000,
+      "high": 1600000
+    }
+  },
+  "recommended_capital_targets": {
+    "capital_development_early_pitch": 1250000,
+    "capital_plus_startup_reserve": 1500000,
+    "suggested_startup_operating_reserve_low": 200000,
+    "suggested_startup_operating_reserve_high": 300000
+  },
+  "knowledge_tags": [
+    "BUDGET_ESTIMATE",
+    "REQUIRES_VENDOR_QUOTE",
+    "REQUIRES_COUNTY_CONFIRMATION",
+    "HUMAN_REVIEW_REQUIRED"
+  ]
+}
