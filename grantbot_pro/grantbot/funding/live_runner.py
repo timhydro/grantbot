@@ -11,7 +11,7 @@ from grantbot.funding.connectors.grants_gov import GrantsGovAdapter
 from grantbot.funding.connectors.html_page import OfficialFundingPageAdapter
 from grantbot.funding.ingest import ingest_opportunity
 from grantbot.funding.planner import build_discovery_plan
-from grantbot.funding.registry import get_source, seed_catalog
+from grantbot.funding.registry import seed_catalog
 
 
 OFFICIAL_SOURCE_PAGES: dict[str, list[dict[str, Any]]] = {
@@ -32,6 +32,19 @@ OFFICIAL_SOURCE_PAGES: dict[str, list[dict[str, Any]]] = {
     ],
     "cdfi_fund_directory": [
         {"url": "https://www.cdfifund.gov/", "source_name": "CDFI Fund", "max_links": 180},
+    ],
+    "giin_members": [
+        {"url": "https://thegiin.org/members/", "source_name": "Global Impact Investing Network", "max_links": 250},
+        {"url": "https://thegiin.org/investors-council/", "source_name": "GIIN Investors' Council", "max_links": 200},
+    ],
+    "mission_investors_exchange": [
+        {"url": "https://missioninvestors.org/tools/search/mission-investment-database", "source_name": "Mission Investors Exchange", "max_links": 250},
+    ],
+    "angel_capital_association": [
+        {"url": "https://angelcapitalassociation.org/", "source_name": "Angel Capital Association", "max_links": 200},
+    ],
+    "florida_funders": [
+        {"url": "https://www.floridafunders.com/", "source_name": "Florida Funders", "max_links": 180},
     ],
 }
 
@@ -83,10 +96,12 @@ def _infer_opportunity_type(source_key: str, lane: str, result: SearchResult) ->
     ).lower()
     if "fiscal sponsor" in text or "fiscal sponsorship" in text:
         return "FISCAL_SPONSORSHIP"
-    if "angel" in text or "equity" in text:
-        return "ANGEL_INVESTMENT"
     if "program related investment" in text or "program-related investment" in text or "recoverable grant" in text:
         return "PRI"
+    if "angel" in text or "equity" in text or "venture capital" in text:
+        return "ANGEL_INVESTMENT"
+    if "impact investor" in text or "impact investment" in text or "mission investment" in text:
+        return "IMPACT_INVESTMENT"
     if "cdfi" in text:
         return "CDFI_LOAN"
     if "kiva" in text or "microloan" in text or "zero interest" in text or "0%" in text:
@@ -210,7 +225,7 @@ def run_live_discovery(
                     if folder:
                         analyzed["review_folder"] = folder
                         review_count += 1
-        except Exception as exc:  # one source must not abort the whole discovery run
+        except Exception as exc:
             errors.append(
                 {
                     "source_key": source_key,
