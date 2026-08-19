@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from grantbot.eligibility.tax_status import TaxStatus
-from grantbot.funding.live_runner import run_live_discovery
+from grantbot.funding.live_runner import OFFICIAL_SOURCE_PAGES, run_live_discovery
 from grantbot.funding.registry import registry_stats, seed_catalog
 
 
@@ -28,6 +28,19 @@ class LiveFundingRequest(BaseModel):
     applicant_tax_status: TaxStatus = TaxStatus.PENDING_501C3
     has_fiscal_sponsor: bool = False
     create_review_folders: bool = True
+
+
+@router.get("/health")
+def health() -> dict[str, Any]:
+    stats = registry_stats()
+    return {
+        "status": "ok",
+        "version": 24,
+        "module": "alternative_capital_discovery",
+        "registered_sources": stats.get("active_sources", 0),
+        "live_page_adapters": sorted(OFFICIAL_SOURCE_PAGES),
+        "default_tax_status": TaxStatus.PENDING_501C3.value,
+    }
 
 
 @router.post("/seed")
