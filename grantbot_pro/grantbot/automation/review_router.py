@@ -26,18 +26,21 @@ class ReviewRoute:
 
 def classify_funding_type(text: str, metadata: dict[str, Any] | None = None) -> str:
     blob = " ".join((text, str(metadata or {}))).lower()
-    if any(term in blob for term in ("angel investor", "equity", "venture", "impact investor")):
+
+    if any(term in blob for term in ("angel investor", "equity", "venture capital", "impact investor")):
         return "IMPACT_OR_ANGEL_INVESTMENT"
-    if any(term in blob for term in ("program-related investment", "pri", "recoverable grant")):
+    if any(term in blob for term in ("program-related investment", "program related investment", "pri", "recoverable grant")):
         return "PRI_OR_RECOVERABLE_CAPITAL"
     if any(term in blob for term in ("fiscal sponsor", "fiscal sponsorship")):
         return "FISCAL_SPONSORSHIP"
     if any(term in blob for term in ("cdfi", "community development financial institution")):
         return "CDFI_LOAN"
-    if any(term in blob for term in ("microloan", "loan", "financing", "line of credit")):
-        return "LOAN"
-    if any(term in blob for term in ("crowdfund", "crowdfunding", "kiva")):
+    if any(term in blob for term in ("kiva", "microloan", "micro loan", "zero interest loan", "0% loan")):
+        return "MICROLOAN_OR_CROWDFUNDED_LOAN"
+    if any(term in blob for term in ("crowdfund", "crowdfunding", "community investment platform")):
         return "CROWDFUNDING"
+    if any(term in blob for term in ("loan", "financing", "line of credit")):
+        return "LOAN"
     if any(term in blob for term in ("sponsor", "sponsorship")):
         return "CORPORATE_SPONSORSHIP"
     if any(term in blob for term in ("in-kind", "equipment donation", "product donation")):
