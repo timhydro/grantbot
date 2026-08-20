@@ -34,13 +34,26 @@ for arg in "$@"; do
 done
 
 echo
+
 echo "============================================"
-echo " GRANTBOT PRO 21 BOOTSTRAP"
+echo " GRANTBOT PRO BOOTSTRAP"
 echo "============================================"
 echo
 
 if ! command -v python3 >/dev/null 2>&1; then
     echo "ERROR: Python 3 is required."
+    exit 1
+fi
+
+if ! python3 - <<'PY'
+import sys
+
+if not ((3, 10) <= sys.version_info[:2] < (3, 14)):
+    raise SystemExit(
+        f"GrantBot requires Python >=3.10 and <3.14; found {sys.version.split()[0]}"
+    )
+PY
+then
     exit 1
 fi
 
@@ -68,6 +81,15 @@ echo
 echo "Installing GrantBot itself in editable mode..."
 .venv/bin/pip install -e .
 
+VERSION="$(PYTHONPATH="$ROOT" .venv/bin/python - <<'PY'
+from grantbot import __version__
+print(__version__)
+PY
+)"
+
+echo
+echo "GrantBot Pro version: $VERSION"
+
 echo
 echo "Compiling source..."
 .venv/bin/python -m compileall -q grantbot tests
@@ -82,11 +104,11 @@ PYTHONPATH="$ROOT" .venv/bin/python -m pytest -q
 
 if [ "$WITH_LOCAL_AI" -eq 1 ]; then
     echo
-echo "Installing/verifying free local AI..."
+    echo "Installing/verifying free local AI..."
     bash "$ROOT/setup_local_ai.sh"
 else
     echo
-echo "Checking local AI status (non-fatal)..."
+    echo "Checking local AI status (non-fatal)..."
     PYTHONPATH="$ROOT" .venv/bin/python - <<'PY'
 import json
 from grantbot.writing.ollama_provider import OllamaProvider
@@ -101,7 +123,7 @@ PYTHONPATH="$ROOT" .venv/bin/python -m grantbot status
 
 echo
 echo "============================================"
-echo " GRANTBOT PRO 21 READY"
+echo " GRANTBOT PRO $VERSION READY"
 echo "============================================"
 echo
 echo "Launch API:"
