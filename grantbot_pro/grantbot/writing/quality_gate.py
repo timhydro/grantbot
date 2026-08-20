@@ -121,18 +121,22 @@ def evaluate_draft(
     score = 100
     issues: list[str] = []
     wc = len(text.split())
+    hard_blockers: list[str] = []
 
     if unsupported:
         score -= min(45, 15 * len(unsupported))
         issues.append("Unsupported numeric claims: " + ", ".join(unsupported))
+        hard_blockers.append("unsupported_numbers")
 
     if max_words is not None and wc > max_words:
         score -= 25
         issues.append(f"Word limit exceeded: {wc}/{max_words}")
+        hard_blockers.append("word_limit")
 
     if wc < 25:
         score -= 15
         issues.append("Draft is too brief to demonstrate sufficient specificity")
+        hard_blockers.append("too_brief")
 
     missing_terms = [
         t
@@ -147,6 +151,7 @@ def evaluate_draft(
     if relevance < 0.34:
         score -= 20
         issues.append("Draft may not directly cover enough of the funder's question")
+        hard_blockers.append("off_question")
     elif relevance < 0.5:
         score -= 10
         issues.append("Draft only partially covers the funder's question")
@@ -164,7 +169,7 @@ def evaluate_draft(
 
     score = max(0, min(100, score))
     return QualityResult(
-        passed=score >= 80 and not unsupported,
+        passed=score >= 80 and not hard_blockers,
         score=score,
         word_count=wc,
         issues=issues,
