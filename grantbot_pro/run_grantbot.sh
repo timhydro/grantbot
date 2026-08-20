@@ -55,9 +55,15 @@ PY
 
 if [ "$PORT_BUSY" = "1" ]; then
     echo "Port $HOST:$PORT is already in use."
-    if command -v curl >/dev/null 2>&1 && \
-       curl -fsS --max-time 2 "http://$PROBE_HOST:$PORT/health" 2>/dev/null | \
-       grep -q '"status":"ok"'; then
+    IS_GRANTBOT=0
+    if command -v curl >/dev/null 2>&1; then
+        if curl -fsS --max-time 2 "http://$PROBE_HOST:$PORT/health" 2>/dev/null | grep -q '"status":"ok"'; then
+            IS_GRANTBOT=1
+        elif curl -fsS --max-time 2 "http://$PROBE_HOST:$PORT/openapi.json" 2>/dev/null | grep -q 'GrantBot Pro Unified'; then
+            IS_GRANTBOT=1
+        fi
+    fi
+    if [ "$IS_GRANTBOT" = "1" ]; then
         echo "GrantBot Pro $VERSION is already running at http://$PROBE_HOST:$PORT"
         exit 0
     fi
