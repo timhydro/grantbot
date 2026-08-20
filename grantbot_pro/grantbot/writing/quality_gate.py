@@ -6,6 +6,58 @@ from typing import Any
 
 
 NUMBER_RE = re.compile(r"(?<!\w)\$?\d[\d,]*(?:\.\d+)?%?(?!\w)")
+WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]{2,}")
+EVIDENCE_RE = re.compile(
+    r"\b(?:according to|data|evidence|report|study|survey|documented|verified|measured|tracked|evaluated|baseline|outcome|result)\b",
+    re.IGNORECASE,
+)
+STOPWORDS = {
+    "about",
+    "after",
+    "again",
+    "against",
+    "also",
+    "and",
+    "are",
+    "because",
+    "been",
+    "being",
+    "between",
+    "both",
+    "can",
+    "could",
+    "does",
+    "for",
+    "from",
+    "have",
+    "how",
+    "into",
+    "its",
+    "more",
+    "most",
+    "our",
+    "program",
+    "project",
+    "that",
+    "the",
+    "their",
+    "them",
+    "there",
+    "these",
+    "they",
+    "this",
+    "through",
+    "was",
+    "were",
+    "what",
+    "when",
+    "where",
+    "which",
+    "will",
+    "with",
+    "would",
+    "your",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,6 +70,26 @@ class QualityResult:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+def _question_terms(question: str) -> list[str]:
+    seen: set[str] = set()
+    terms: list[str] = []
+    for token in WORD_RE.findall(question.lower()):
+        if token in STOPWORDS or len(token) < 4 or token in seen:
+            continue
+        seen.add(token)
+        terms.append(token)
+    return terms
+
+
+def _relevance_ratio(question: str, draft: str) -> float:
+    terms = _question_terms(question)
+    if not terms:
+        return 1.0
+    text = draft.lower()
+    hits = sum(1 for term in terms if term in text)
+    return hits / len(terms)
 
 
 def evaluate_draft(
@@ -58,6 +130,10 @@ def evaluate_draft(
         score -= 25
         issues.append(f"Word limit exceeded: {wc}/{max_words}")
 
+    if wc < 25:
+        score -= 15
+        issues.append("Draft is too brief to demonstrate sufficient specificity")
+
     missing_terms = [
         t
         for t in (required_terms or [])
@@ -67,12 +143,24 @@ def evaluate_draft(
         score -= min(25, 5 * len(missing_terms))
         issues.append("Missing funder priorities: " + ", ".join(missing_terms))
 
-    if not any(
-        token in text.lower()
-        for token in re.findall(r"[a-zA-Z]{4,}", question.lower())
-    ):
-        score -= 15
-        issues.append("Draft may not directly answer the question")
+    relevance = _relevance_ratio(question, text)
+    if relevance < 0.34:
+        score -= 20
+        issues.append("Draft may not directly cover enough of the funder's question")
+    elif relevance < 0.5:
+        score -= 10
+        issues.append("Draft only partially covers the funder's question")
+
+    has_structure = any(mark in text for mark in (".", ";", ":", "\n"))
+    if not has_structure and wc >= 25:
+        score -= 8
+        issues.append("Draft lacks clear sentence or paragraph structure")
+
+    factual_source_present = bool(source.strip())
+    evidence_signal = bool(EVIDENCE_RE.search(text)) or bool(NUMBER_RE.search(text))
+    if factual_source_present and wc >= 60 and not evidence_signal:
+        score -= 8
+        issues.append("Draft would benefit from clearer evidence, measurement, or verified factual support")
 
     score = max(0, min(100, score))
     return QualityResult(
