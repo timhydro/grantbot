@@ -14,7 +14,8 @@ app = FastAPI(
         "organization knowledge, local AI grant writing, authoritative compliance, "
         "financial consistency, evidence-calibrated risk, adjudicated human learning, "
         "post-award management, executive portfolio command center, controlled "
-        "organizational document vault, and application platform."
+        "organizational document vault, agentic orchestration, persistent workflow "
+        "control, and application platform."
     ),
 )
 
@@ -82,6 +83,7 @@ from grantbot.api.discovery_quality_v22 import router as discovery_quality_v22_r
 from grantbot.api.knowledge_v23 import router as knowledge_v23_router
 from grantbot.api.funding_live_v24 import router as funding_live_v24_router
 from grantbot.api.agentic_v26 import router as agentic_v26_router
+from grantbot.api.workflow_v27 import router as workflow_v27_router
 
 app.include_router(master_pipeline_v5_router)
 app.include_router(discovery_v6_router)
@@ -113,3 +115,4 @@ app.include_router(discovery_quality_v22_router)
 app.include_router(knowledge_v23_router)
 app.include_router(funding_live_v24_router)
 app.include_router(agentic_v26_router)
+app.include_router(workflow_v27_router)
