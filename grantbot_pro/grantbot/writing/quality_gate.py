@@ -136,7 +136,8 @@ def evaluate_draft(
     if wc < 25:
         score -= 15
         issues.append("Draft is too brief to demonstrate sufficient specificity")
-        hard_blockers.append("too_brief")
+        if wc < 10:
+            hard_blockers.append("too_brief")
 
     missing_terms = [
         t
