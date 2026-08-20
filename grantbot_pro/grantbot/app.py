@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from grantbot import __version__
+from grantbot import __app_name__, __organization__, __version__
 from grantbot.security.auth import ensure_admin_key
 
 
@@ -19,8 +19,31 @@ app = FastAPI(
 )
 
 
+@app.get("/", tags=["system"])
+def root() -> dict[str, str]:
+    """Return a stable, dependency-free identity response for operators."""
+    return {
+        "name": __app_name__,
+        "organization": __organization__,
+        "version": __version__,
+        "status": "active",
+        "docs": "/docs",
+        "health": "/health",
+    }
+
+
+@app.get("/health", tags=["system"])
+def health() -> dict[str, str]:
+    """Lightweight liveness endpoint that does not require external services."""
+    return {
+        "status": "ok",
+        "service": __app_name__,
+        "version": __version__,
+    }
+
+
 def main() -> None:
-    print("GrantBot Pro Unified System Active")
+    print(f"{__app_name__} {__version__} Unified System Active")
 
 
 if __name__ == "__main__":

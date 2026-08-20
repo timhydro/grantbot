@@ -115,7 +115,7 @@ def test_readiness_prioritizes_consequential_missing_information() -> None:
 
 
 def test_v23_knowledge_routes_are_registered() -> None:
-    paths = {route.path for route in app.routes}
+    paths = set(app.openapi().get("paths", {}))
     assert "/v23/knowledge/status" in paths
     assert "/v23/knowledge/questions" in paths
     assert "/v23/knowledge/profile" in paths

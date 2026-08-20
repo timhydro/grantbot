@@ -21,13 +21,23 @@ from grantbot.core.config import settings
 print(settings.port)
 PY
 )"
+VERSION="$(PYTHONPATH="$ROOT" "$PYTHON" - <<'PY'
+from grantbot import __version__
+print(__version__)
+PY
+)"
 
 if ! [[ "$PORT" =~ ^[0-9]+$ ]] || [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
     echo "ERROR: Invalid GrantBot port: $PORT"
     exit 1
 fi
 
-PORT_BUSY="$($PYTHON - "$HOST" "$PORT" <<'PY'
+PROBE_HOST="$HOST"
+case "$PROBE_HOST" in
+    0.0.0.0|::|"[::]") PROBE_HOST="127.0.0.1" ;;
+esac
+
+PORT_BUSY="$($PYTHON - "$PROBE_HOST" "$PORT" <<'PY'
 import socket
 import sys
 
@@ -45,10 +55,16 @@ PY
 
 if [ "$PORT_BUSY" = "1" ]; then
     echo "Port $HOST:$PORT is already in use."
-    if command -v curl >/dev/null 2>&1 && \
-       curl -fsS --max-time 2 "http://$HOST:$PORT/openapi.json" 2>/dev/null | \
-       grep -q 'GrantBot Pro Unified'; then
-        echo "GrantBot is already running at http://$HOST:$PORT"
+    IS_GRANTBOT=0
+    if command -v curl >/dev/null 2>&1; then
+        if curl -fsS --max-time 2 "http://$PROBE_HOST:$PORT/health" 2>/dev/null | grep -q '"status":"ok"'; then
+            IS_GRANTBOT=1
+        elif curl -fsS --max-time 2 "http://$PROBE_HOST:$PORT/openapi.json" 2>/dev/null | grep -q 'GrantBot Pro Unified'; then
+            IS_GRANTBOT=1
+        fi
+    fi
+    if [ "$IS_GRANTBOT" = "1" ]; then
+        echo "GrantBot Pro $VERSION is already running at http://$PROBE_HOST:$PORT"
         exit 0
     fi
     echo "ERROR: Another process is using the configured GrantBot port."
@@ -58,10 +74,11 @@ fi
 
 echo
 echo "============================================"
-echo " GRANTBOT PRO STARTING"
+echo " GRANTBOT PRO $VERSION STARTING"
 echo "============================================"
-echo "API:  http://$HOST:$PORT"
-echo "Docs: http://$HOST:$PORT/docs"
+echo "API:    http://$PROBE_HOST:$PORT"
+echo "Health: http://$PROBE_HOST:$PORT/health"
+echo "Docs:   http://$PROBE_HOST:$PORT/docs"
 echo "Admin key file: $ROOT/data/master_api_key.txt"
 echo
 echo "Press Ctrl+C to stop GrantBot."

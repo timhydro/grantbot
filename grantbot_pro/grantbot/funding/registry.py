@@ -213,14 +213,19 @@ def registry_stats() -> dict[str, Any]:
         if source.get("requires_investable_entity"):
             investable_entity_required += 1
 
+    by_kind = dict(sorted(kinds.items()))
+    by_jurisdiction = dict(sorted(jurisdictions.items()))
     return {
         "total_sources": len(sources),
         "active_sources": active,
         "direct_nonprofit_sources": direct,
         "conditional_sources": conditional,
         "investable_entity_required": investable_entity_required,
-        "source_kinds": dict(sorted(kinds.items())),
-        "jurisdictions": dict(sorted(jurisdictions.items())),
+        "source_kinds": by_kind,
+        "jurisdictions": by_jurisdiction,
+        # Compatibility aliases retained for older API/tests and external clients.
+        "by_source_kind": by_kind,
+        "by_jurisdiction": by_jurisdiction,
     }
 
 

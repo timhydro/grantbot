@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from typing import Any
 
 from grantbot.applications.review_workspace import (
@@ -29,7 +30,17 @@ def classify_funding_type(text: str, metadata: dict[str, Any] | None = None) -> 
 
     if any(term in blob for term in ("angel investor", "equity", "venture capital", "impact investor")):
         return "IMPACT_OR_ANGEL_INVESTMENT"
-    if any(term in blob for term in ("program-related investment", "program related investment", "pri", "recoverable grant")):
+    if (
+        any(
+            term in blob
+            for term in (
+                "program-related investment",
+                "program related investment",
+                "recoverable grant",
+            )
+        )
+        or re.search(r"\bpri\b", blob)
+    ):
         return "PRI_OR_RECOVERABLE_CAPITAL"
     if any(term in blob for term in ("fiscal sponsor", "fiscal sponsorship")):
         return "FISCAL_SPONSORSHIP"

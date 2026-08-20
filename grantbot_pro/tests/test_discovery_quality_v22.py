@@ -120,7 +120,7 @@ def test_full_analysis_with_blockers_stays_rejected() -> None:
 
 
 def test_v22_queue_routes_are_registered() -> None:
-    paths = {route.path for route in app.routes}
+    paths = set(app.openapi().get("paths", {}))
     assert "/v22/queue/health" in paths
     assert "/v22/queue/discover" in paths
     assert "/v22/queue/latest" in paths
