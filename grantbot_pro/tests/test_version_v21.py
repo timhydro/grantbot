@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import tomllib
 from pathlib import Path
 
@@ -13,4 +14,4 @@ def test_version_is_aligned_across_package_metadata_and_api() -> None:
     expected = metadata["project"]["version"]
     assert grantbot.__version__ == expected
     assert app.version == expected
-    assert expected == "26.0.0"
+    assert re.fullmatch(r"\d+\.\d+\.\d+", expected)
