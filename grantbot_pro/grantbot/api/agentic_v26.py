@@ -7,8 +7,10 @@ from pydantic import BaseModel, Field
 
 from grantbot.agents.crewai_local import crewai_status, kickoff_local_grant_crew
 from grantbot.agents.pipeline_v26 import AGENT_ROLES, build_execution_plan, write_and_plan
+from grantbot.agents.research_v26 import build_evidence_brief
 from grantbot.eligibility.tax_status import TaxStatus
 from grantbot.funding.live_runner import run_live_discovery
+from grantbot.matching.competitive_v14 import analyze_competitiveness
 
 
 router = APIRouter(prefix="/v26/agents", tags=["GrantBot Agentic Pipeline v26"])
@@ -61,6 +63,11 @@ class DiscoveryRequest(BaseModel):
     create_review_folders: bool = False
 
 
+class MatchRequest(BaseModel):
+    opportunity_id: str = Field(min_length=1, max_length=80)
+    acquire_if_missing: bool = True
+
+
 @router.get("/health")
 def health() -> dict[str, Any]:
     return {
@@ -69,6 +76,39 @@ def health() -> dict[str, Any]:
         "mode": "local-first-human-gated",
         "roles": list(AGENT_ROLES),
         "crewai": crewai_status().to_dict(),
+        "safe_to_submit": False,
+    }
+
+
+@router.post("/research")
+def research(payload: PlanRequest) -> dict[str, Any]:
+    brief = build_evidence_brief(
+        opportunity=payload.opportunity.model_dump(),
+        facts=payload.facts,
+    )
+    return {
+        "version": 26,
+        "agent": "evidence_research",
+        "brief": brief.to_dict(),
+        "safe_to_submit": False,
+    }
+
+
+@router.post("/match")
+def match(payload: MatchRequest) -> dict[str, Any]:
+    try:
+        result = analyze_competitiveness(
+            payload.opportunity_id,
+            acquire_if_missing=payload.acquire_if_missing,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return {
+        "version": 26,
+        "agent": "grant_strategy",
+        "matching": result.to_dict(),
         "safe_to_submit": False,
     }
 
