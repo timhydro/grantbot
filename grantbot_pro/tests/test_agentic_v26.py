@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from grantbot.agents.pipeline_v26 import AGENT_ROLES, build_execution_plan
+from grantbot.agents.research_v26 import build_evidence_brief
 from grantbot.app import app
 
 
@@ -54,9 +55,42 @@ def test_v26_execution_plan_blocks_missing_source_and_eligibility() -> None:
     assert plan.missing_fact_count == 1
 
 
+def test_v26_evidence_brief_preserves_provenance_and_unknowns() -> None:
+    brief = build_evidence_brief(
+        opportunity={
+            "title": "Housing Opportunity",
+            "source_url": "https://example.gov/housing",
+            "eligibility": "Eligible nonprofits may apply.",
+            "deadline": "2026-10-01",
+        },
+        facts=[
+            {
+                "key": "population",
+                "value": "adults experiencing homelessness",
+                "status": "VERIFIED",
+                "source": "approved profile",
+                "source_url": "https://example.org/profile",
+            },
+            {
+                "key": "requested_amount",
+                "value": None,
+                "status": "MISSING",
+                "source": "user required",
+            },
+        ],
+    )
+    assert brief.evidence_strength == "STRONG"
+    assert len(brief.verified_facts) == 1
+    assert len(brief.unknowns) == 1
+    assert "https://example.gov/housing" in brief.source_urls
+    assert "https://example.org/profile" in brief.source_urls
+
+
 def test_v26_routes_are_registered_in_openapi() -> None:
     paths = set(app.openapi()["paths"])
     assert "/v26/agents/health" in paths
+    assert "/v26/agents/research" in paths
+    assert "/v26/agents/match" in paths
     assert "/v26/agents/plan" in paths
     assert "/v26/agents/write-and-plan" in paths
     assert "/v26/agents/crew" in paths
