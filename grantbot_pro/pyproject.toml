@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "grantbot-pro"
-version = "23.1.0"
-description = "Unified local-AI funding intelligence, canonical knowledge authority, and mission-aware grant application platform for BrokenGrowthMinistries"
+version = "26.0.0"
+description = "Unified local-AI funding intelligence, agentic grant orchestration, canonical knowledge authority, and mission-aware grant application platform for BrokenGrowthMinistries"
 requires-python = ">=3.10,<3.14"
 dependencies = [
     "fastapi>=0.115,<1",
@@ -25,6 +25,9 @@ dependencies = [
 test = [
     "pytest>=8,<10",
     "httpx2>=2.9,<3",
+]
+agents = [
+    "crewai[litellm]>=1.15,<2",
 ]
 
 [project.scripts]

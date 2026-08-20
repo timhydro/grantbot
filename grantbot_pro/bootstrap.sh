@@ -5,13 +5,15 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 
 WITH_LOCAL_AI=0
+WITH_AGENTS=0
 
 usage() {
     cat <<'EOF'
-Usage: bash bootstrap.sh [--with-local-ai]
+Usage: bash bootstrap.sh [--with-local-ai] [--with-agents]
 
 Options:
   --with-local-ai  Install/verify Ollama and the configured free local model.
+  --with-agents    Install the optional CrewAI agent layer for local Ollama orchestration.
   -h, --help       Show this help.
 EOF
 }
@@ -20,6 +22,9 @@ for arg in "$@"; do
     case "$arg" in
         --with-local-ai)
             WITH_LOCAL_AI=1
+            ;;
+        --with-agents)
+            WITH_AGENTS=1
             ;;
         -h|--help)
             usage
@@ -79,7 +84,11 @@ echo "Installing GrantBot dependencies..."
 
 echo
 echo "Installing GrantBot itself in editable mode..."
-.venv/bin/pip install -e .
+if [ "$WITH_AGENTS" -eq 1 ]; then
+    .venv/bin/pip install -e '.[agents]'
+else
+    .venv/bin/pip install -e .
+fi
 
 VERSION="$(PYTHONPATH="$ROOT" .venv/bin/python - <<'PY'
 from grantbot import __version__
@@ -117,6 +126,17 @@ print(json.dumps(OllamaProvider().health(), indent=2, sort_keys=True))
 PY
 fi
 
+if [ "$WITH_AGENTS" -eq 1 ]; then
+    echo
+    echo "Checking CrewAI local-agent integration..."
+    PYTHONPATH="$ROOT" .venv/bin/python - <<'PY'
+import json
+from grantbot.agents.crewai_local import crewai_status
+
+print(json.dumps(crewai_status().to_dict(), indent=2, sort_keys=True))
+PY
+fi
+
 echo
 echo "Running GrantBot diagnostics..."
 PYTHONPATH="$ROOT" .venv/bin/python -m grantbot status
@@ -130,6 +150,11 @@ echo "Launch API:"
 echo "  bash run_grantbot.sh"
 if [ "$WITH_LOCAL_AI" -ne 1 ]; then
     echo
-echo "To install/verify the free local writer later:"
+    echo "To install/verify the free local writer later:"
     echo "  bash setup_local_ai.sh"
+fi
+if [ "$WITH_AGENTS" -ne 1 ]; then
+    echo
+    echo "To enable the optional local CrewAI agents later:"
+    echo "  .venv/bin/pip install -e '.[agents]'"
 fi
