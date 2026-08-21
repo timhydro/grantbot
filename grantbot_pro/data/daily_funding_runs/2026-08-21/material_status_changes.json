@@ -1,0 +1,21 @@
+{
+  "run_date": "2026-08-21",
+  "changes": [
+    {
+      "opportunity_id": "CPD-2600-DC-0025",
+      "grants_gov_record": "361999",
+      "title": "FY 2026 Continuum of Care Competition and Youth Homelessness Demonstration Program Grants NOFO",
+      "existing_grantbot_record": "grantbot_pro/data/nofo_blueprints/361999/application_blueprint.json",
+      "change_severity": "CRITICAL_STATUS_CHANGE",
+      "prior_visible_status": "Grants.gov continues to display an August 26, 2026 application deadline.",
+      "current_authoritative_status": "HUD states that on August 7, 2026 the U.S. District Court for the District of Rhode Island vacated the FY2026 CoC NOFO. HUD is evaluating legal options and says SNAPS will announce availability of CoC Applications when ready.",
+      "action": "PAUSE_APPLICATION_WORK_AND_DO_NOT_TREAT_AUGUST_26_DEADLINE_AS_ACTIONABLE_UNTIL_HUD_ISSUES_REPLACEMENT_OR_REACTIVATION_GUIDANCE",
+      "local_context": "HUD's FY2026 Estimated ARD report lists FL-511 Pensacola/Escambia, Santa Rosa Counties CoC with estimated ARD $837,774, PPRN/FPRN $2,875,203, DV Bonus $575,041, CoC Bonus $500,000 and Tier 1 $502,664. These figures remain useful for planning but do not override the court-vacatur notice.",
+      "source_urls": [
+        "https://www.hud.gov/hud-partners/coc-program-competition",
+        "https://www.grants.gov/search-results-detail/361999"
+      ],
+      "needs_user": []
+    }
+  ]
+}
