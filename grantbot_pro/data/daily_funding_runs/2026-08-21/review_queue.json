@@ -1,0 +1,118 @@
+{
+  "run_date": "2026-08-21",
+  "source_of_truth": "timhydro/grantbot",
+  "replit_runtime": "UNAVAILABLE_NO_MATCHING_GRANTBOT_APP",
+  "paid_usage_incurred": false,
+  "human_submission_required": true,
+  "candidates": [
+    {
+      "opportunity_id": "O-BJA-2026-172698",
+      "title": "BJA FY 2026 Second Chance Act Improving Reentry Education and Employment Outcomes",
+      "funder": "U.S. Department of Justice, Bureau of Justice Assistance",
+      "status": "OPEN",
+      "posted_date": "2026-08-17",
+      "grants_gov_deadline": "2026-09-24T23:59:00-04:00",
+      "justgrants_deadline": "2026-10-01T20:59:00-04:00",
+      "award_ceiling_usd": 1000000,
+      "fit": "VERY_HIGH",
+      "priority": 1,
+      "why_fit": [
+        "Directly supports education, vocational/trade training, workforce development, job readiness, employment attainment and retention for adults and youth leaving prison and jail.",
+        "Closely matches Broken Growth Ministries' reentry, job placement, trade-skills training and post-release stabilization model."
+      ],
+      "eligibility_route": "NEEDS_PACKET_VERIFICATION",
+      "eligibility_note": "BJA describes the program as supporting state, local and tribal governments and community-based organizations. Confirm applicant-type language in the current FY2026 NOFO before treating Broken Growth Ministries as a direct applicant; otherwise pursue a government/eligible lead partnership.",
+      "source_urls": [
+        "https://bja.ojp.gov/funding/opportunities/o-bja-2026-172698"
+      ],
+      "pipeline": {
+        "source_verification": "COMPLETE",
+        "strategic_fit": "COMPLETE",
+        "requirements_parsing": "STAGED",
+        "fact_verification": "STAGED",
+        "safe_autofill": "BLOCKED_PENDING_ELIGIBILITY_AND_ORG_FACTS",
+        "narrative_drafting": "STAGED",
+        "budget_review": "NEEDS_USER",
+        "compliance_risk_review": "STAGED",
+        "final_qa": "PENDING",
+        "human_review": "READY_FOR_ACTION"
+      },
+      "needs_user": [
+        "Confirm current IRS 501(c)(3) determination status or fiscal-sponsor route if required by the NOFO.",
+        "Confirm proposed correctional/jail partner and access for pre-release programming.",
+        "Confirm project budget, match/cost share if any, staffing commitments, partner commitments and outcome targets."
+      ]
+    },
+    {
+      "opportunity_id": "O-BJA-2026-172673",
+      "title": "BJA FY 2026 Smart Reentry Demonstration Program",
+      "funder": "U.S. Department of Justice, Bureau of Justice Assistance",
+      "status": "OPEN",
+      "posted_date": "2026-08-13",
+      "grants_gov_deadline": "2026-09-24T23:59:00-04:00",
+      "justgrants_deadline": "2026-10-01T20:59:00-04:00",
+      "award_ceiling_usd": 1100000,
+      "cost_share": "REQUIRED_PER_CURRENT_GRANTS_LISTING",
+      "fit": "HIGH_PARTNERSHIP",
+      "priority": 2,
+      "why_fit": [
+        "Funds comprehensive reentry strategies and interventions intended to reduce recidivism for people returning from adult correctional facilities.",
+        "Broken Growth Ministries could be a strong service/subrecipient partner for housing, employment, mentorship, transportation and stabilization components."
+      ],
+      "eligibility_route": "PARTNER_LEAD_REQUIRED",
+      "eligibility_note": "Current official and Grants.gov-derived listings identify state, local, tribal and other units of government as the primary eligible applicants. Treat Broken Growth Ministries as a prospective subrecipient/implementation partner unless the current NOFO expressly provides another direct route.",
+      "source_urls": [
+        "https://bja.ojp.gov/funding/opportunities/o-bja-2026-172673"
+      ],
+      "pipeline": {
+        "source_verification": "COMPLETE",
+        "strategic_fit": "COMPLETE",
+        "requirements_parsing": "STAGED",
+        "partner_strategy": "NEEDS_USER",
+        "budget_review": "NEEDS_USER",
+        "compliance_risk_review": "STAGED",
+        "human_review": "READY_FOR_ACTION"
+      },
+      "needs_user": [
+        "Identify/authorize outreach to an eligible lead such as Escambia County, City of Pensacola, Florida Department of Corrections or another qualifying jurisdiction.",
+        "Confirm any cash/in-kind match commitment only after the NOFO and partner budget are reviewed.",
+        "Do not make any partnership, match or financial commitment without human approval."
+      ]
+    },
+    {
+      "opportunity_id": "VOLUNTEER-FL-VGF-2026-2027",
+      "title": "Volunteer Generation Fund Grant Year 2026-2027",
+      "funder": "Volunteer Florida",
+      "status": "OPEN",
+      "deadline": "2026-09-08T17:00:00-04:00",
+      "award_ceiling_usd": 20000,
+      "match_requirement": "50% of grant request",
+      "fit": "HIGH_OPERATING_CAPACITY",
+      "priority": 3,
+      "why_fit": [
+        "Supports Florida-based nonprofits, faith-based/community organizations and partnerships that mobilize volunteers.",
+        "The published NOFO expressly allows an established 501(c)(3) fiscal agent to accept donations for a group without IRS tax-exempt status.",
+        "Could strengthen volunteer recruitment and service capacity for outreach, reentry support, food/clothing distribution, mentoring and housing-support operations."
+      ],
+      "eligibility_route": "DIRECT_IF_501C3_OR_FISCAL_AGENT",
+      "source_urls": [
+        "https://www.volunteerflorida.org/wp-content/uploads/2026/08/VGF-2026-NOFO.pdf"
+      ],
+      "pipeline": {
+        "source_verification": "COMPLETE",
+        "eligibility_tax_routing": "COMPLETE_WITH_FISCAL_AGENT_OPTION",
+        "strategic_fit": "COMPLETE",
+        "requirements_parsing": "STAGED",
+        "safe_autofill": "BLOCKED_PENDING_MATCH_AND_FISCAL_STATUS",
+        "narrative_drafting": "STAGED",
+        "budget_review": "NEEDS_USER",
+        "human_review": "READY_FOR_ACTION"
+      },
+      "needs_user": [
+        "Confirm whether Broken Growth Ministries has its IRS determination letter by application date; if not, select an eligible fiscal agent.",
+        "Confirm a lawful, documented 50% match source; do not invent or pledge match funds.",
+        "Confirm proposed volunteer targets and service activities."
+      ]
+    }
+  ]
+}
