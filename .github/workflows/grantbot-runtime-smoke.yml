@@ -30,6 +30,7 @@ jobs:
         run: |
           set -Eeuo pipefail
           export GRANTBOT_DATA_DIR="$RUNNER_TEMP/grantbot_runtime_smoke"
+          export GRANTBOT_MASTER_API_KEY_FILE="$GRANTBOT_DATA_DIR/master_api_key.txt"
           mkdir -p "$GRANTBOT_DATA_DIR"
 
           python - <<'PY'
@@ -37,9 +38,10 @@ jobs:
           result = ensure_admin_key()
           print("ADMIN_KEY_CREATED=", result["created"])
           print("ADMIN_ROLE=", result["principal"]["role"])
+          print("ADMIN_KEY_FILE_EXISTS=", __import__("pathlib").Path(result["key_file"]).is_file())
           PY
 
-          ADMIN_KEY="$(cat "$GRANTBOT_DATA_DIR/master_api_key.txt")"
+          ADMIN_KEY="$(cat "$GRANTBOT_MASTER_API_KEY_FILE")"
           python -m uvicorn grantbot.app:app --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/grantbot_uvicorn.log" 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
