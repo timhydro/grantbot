@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "grantbot-pro"
-version = "28.0.0"
-description = "Unified multi-model funding intelligence, agentic grant orchestration, IRS Form 1023 preparation, persistent workflow control, canonical knowledge authority, and mission-aware application platform for BrokenGrowthMinistries"
+version = "29.0.0"
+description = "Production single-voice multi-model funding intelligence, CrewAI orchestration, IRS Form 1023 preparation, canonical knowledge authority, deterministic quality gates, and human-reviewed application platform for BrokenGrowthMinistries"
 requires-python = ">=3.10,<3.14"
 dependencies = [
     "fastapi>=0.115,<1",

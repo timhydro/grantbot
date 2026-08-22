@@ -11,11 +11,11 @@ app = FastAPI(
     version=__version__,
     description=(
         "Unified funding intelligence, mission-aware discovery ranking, canonical "
-        "organization knowledge, multi-model AI grant and IRS application writing, "
-        "authoritative compliance, financial consistency, evidence-calibrated risk, "
-        "adjudicated human learning, post-award management, executive portfolio "
-        "command center, controlled organizational document vault, agentic "
-        "orchestration, persistent workflow control, and application platform."
+        "organization knowledge, production single-voice multi-model grant and IRS "
+        "application writing, authoritative compliance, financial consistency, "
+        "evidence-calibrated risk, adjudicated human learning, post-award management, "
+        "executive portfolio command center, controlled organizational document vault, "
+        "CrewAI orchestration, persistent workflow control, and human-gated application platform."
     ),
 )
 
@@ -86,6 +86,7 @@ from grantbot.api.agentic_v26 import router as agentic_v26_router
 from grantbot.api.workflow_v27 import router as workflow_v27_router
 from grantbot.api.irs1023_v28 import router as irs1023_v28_router
 from grantbot.api.multimodel_v28 import router as multimodel_v28_router
+from grantbot.api.production_v29 import router as production_v29_router
 
 app.include_router(master_pipeline_v5_router)
 app.include_router(discovery_v6_router)
@@ -120,3 +121,4 @@ app.include_router(agentic_v26_router)
 app.include_router(workflow_v27_router)
 app.include_router(irs1023_v28_router)
 app.include_router(multimodel_v28_router)
+app.include_router(production_v29_router)
