@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -46,14 +46,30 @@ def env_int(name: str, default: int) -> int:
         ) from exc
 
 
+def env_path(name: str, default: Path) -> Path:
+    raw = os.getenv(name, "").strip()
+    path = Path(raw).expanduser() if raw else default
+    if not path.is_absolute():
+        path = PROJECT_ROOT / path
+    return path.resolve()
+
+
 @dataclass(frozen=True)
 class Settings:
     project_root: Path = PROJECT_ROOT
 
-    data_dir: Path = PROJECT_ROOT / "data"
-    log_dir: Path = PROJECT_ROOT / "logs"
-    export_dir: Path = PROJECT_ROOT / "exports"
-    backup_dir: Path = PROJECT_ROOT / "backups"
+    data_dir: Path = field(
+        default_factory=lambda: env_path("GRANTBOT_DATA_DIR", PROJECT_ROOT / "data")
+    )
+    log_dir: Path = field(
+        default_factory=lambda: env_path("GRANTBOT_LOG_DIR", PROJECT_ROOT / "logs")
+    )
+    export_dir: Path = field(
+        default_factory=lambda: env_path("GRANTBOT_EXPORT_DIR", PROJECT_ROOT / "exports")
+    )
+    backup_dir: Path = field(
+        default_factory=lambda: env_path("GRANTBOT_BACKUP_DIR", PROJECT_ROOT / "backups")
+    )
 
     environment: str = os.getenv(
         "GRANTBOT_ENVIRONMENT",
