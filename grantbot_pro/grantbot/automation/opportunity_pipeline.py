@@ -5,8 +5,14 @@ from datetime import date, datetime
 from typing import Any
 
 from grantbot.nofo.analyzer import analyze_nofo
+from grantbot.knowledge.writer_facts import load_canonical_writer_facts
 from grantbot.writing.master_writer import write_answer
 from grantbot.writing.ollama_provider import OllamaProvider
+from grantbot.intelligence.opportunity_v302 import (
+    assess_eligibility,
+    learned_opportunity_signal,
+    source_completeness,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,62 +30,7 @@ class Opportunity:
 
 
 def _load_facts() -> list[dict[str, Any]]:
-    try:
-        from grantbot.knowledge.fact_registry import FactRegistry
-    except ImportError:
-        return []
-
-    registry = FactRegistry()
-
-    raw_facts = None
-
-    if hasattr(registry, "all") and callable(registry.all):
-        raw_facts = registry.all()
-    elif hasattr(registry, "get_all") and callable(registry.get_all):
-        raw_facts = registry.get_all()
-    elif hasattr(registry, "get_all_facts") and callable(registry.get_all_facts):
-        raw_facts = registry.get_all_facts()
-    elif hasattr(registry, "_facts"):
-        raw_facts = registry._facts
-
-    if raw_facts is None:
-        return []
-
-    if isinstance(raw_facts, dict):
-        if isinstance(raw_facts.get("facts"), list):
-            raw_facts = raw_facts["facts"]
-        else:
-            raw_facts = [
-                {
-                    "id": str(key),
-                    "category": "general",
-                    "key": str(key),
-                    "value": value,
-                    "status": "APPROVED",
-                    "source": "legacy_fact_registry",
-                }
-                for key, value in raw_facts.items()
-            ]
-
-    facts: list[dict[str, Any]] = []
-
-    for fact in raw_facts:
-        if hasattr(fact, "to_dict") and callable(fact.to_dict):
-            item = fact.to_dict()
-        elif isinstance(fact, dict):
-            item = dict(fact)
-        else:
-            continue
-
-        item.setdefault("id", str(item.get("key", "")))
-        item.setdefault("category", "general")
-        item.setdefault("key", item.get("id", ""))
-        item.setdefault("status", "APPROVED")
-        item.setdefault("source", "fact_registry")
-
-        facts.append(item)
-
-    return facts
+    return load_canonical_writer_facts(actor="opportunity-pipeline-v30.2")
 
 
 def _relevant(question: str, facts: list[dict[str, Any]], limit: int = 12):
@@ -116,6 +67,7 @@ def analyze_opportunity(
     opportunity: Opportunity,
     *,
     generate_drafts: bool = False,
+    use_learning: bool = True,
 ) -> dict[str, Any]:
     text = " ".join(
         (
@@ -132,7 +84,24 @@ def analyze_opportunity(
         funder=opportunity.funder,
     )
 
-    blockers = list(nofo.blockers)
+    eligibility = assess_eligibility(
+        title=opportunity.title,
+        funder=opportunity.funder,
+        description=opportunity.description,
+        eligibility=opportunity.eligibility,
+        nofo_text=opportunity.nofo_text,
+    )
+    completeness = source_completeness(
+        title=opportunity.title,
+        funder=opportunity.funder,
+        source_url=opportunity.source_url,
+        eligibility=opportunity.eligibility,
+        nofo_text=opportunity.nofo_text,
+        extracted_questions=nofo.application_questions,
+        extracted_requirements=nofo.requirements,
+    )
+
+    blockers = list(dict.fromkeys([*nofo.blockers, *eligibility.hard_blockers]))
 
     if opportunity.deadline:
         for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%B %d, %Y"):
@@ -144,11 +113,29 @@ def analyze_opportunity(
             except ValueError:
                 continue
 
-    hard = nofo.hard_reject or any(b.startswith("deadline passed") for b in blockers)
-    score = 0 if hard else nofo.fit_score
+    deadline_blocked = any(b.startswith("deadline passed") for b in blockers)
+    hard = nofo.hard_reject or eligibility.decision == "REJECT" or deadline_blocked
+    partner_only = eligibility.decision == "PARTNER_ONLY" and not hard
+    verify_required = eligibility.decision == "VERIFY" and not hard
+    learning = (
+        learned_opportunity_signal(title=opportunity.title, funder=opportunity.funder)
+        if use_learning and not hard
+        else {
+            "sample_count": 0,
+            "score_adjustment": 0.0,
+            "matches": [],
+            "policy": "learning not applied",
+        }
+    )
+    base_score = 0 if hard else nofo.fit_score
+    score = 0 if hard else int(round(max(0, min(100, base_score + learning["score_adjustment"]))))
 
     if hard:
         priority = "REJECT"
+    elif partner_only:
+        priority = "PARTNER_ONLY"
+    elif verify_required:
+        priority = "VERIFY"
     elif score >= 80:
         priority = "HIGH"
     elif score >= 60:
@@ -167,7 +154,12 @@ def analyze_opportunity(
 
     writer_packages = []
 
-    if generate_drafts and not hard:
+    if generate_drafts and not hard and not partner_only and not verify_required:
+        if not completeness["complete_for_drafting"]:
+            raise RuntimeError(
+                "Drafting blocked until authoritative source acquisition is complete: "
+                + ", ".join(completeness["missing"])
+            )
         provider = OllamaProvider()
         health = provider.health()
         if not health.get("available") or not health.get("model_installed"):
@@ -188,6 +180,7 @@ def analyze_opportunity(
             writer_packages.append(result.to_dict())
 
     readiness = 0 if hard else min(
+        int(completeness["readiness_cap"]),
         100,
         50
         + min(20, len(nofo.application_questions) * 3)
@@ -200,6 +193,7 @@ def analyze_opportunity(
         "title": opportunity.title,
         "funder": opportunity.funder,
         "score": score,
+        "base_score": base_score,
         "priority": priority,
         "hard_reject": hard,
         "blockers": blockers,
@@ -207,10 +201,27 @@ def analyze_opportunity(
         "amount": opportunity.amount,
         "source_url": opportunity.source_url,
         "matched_domains": nofo.matched_domains,
+        "eligibility_decision": eligibility.to_dict(),
+        "source_completeness": completeness,
+        "learning_signal": learning,
         "nofo": nofo.to_dict(),
         "missing_information": missing,
         "readiness_score": readiness,
         "writer_packages": writer_packages,
+        "portfolio_record": {
+            "opportunity_id": opportunity.id,
+            "title": opportunity.title,
+            "funder": opportunity.funder,
+            "funding_type": str(opportunity.metadata.get("funding_type", "GRANT")),
+            "deadline": opportunity.deadline,
+            "source_url": opportunity.source_url,
+            "decision": priority,
+            "eligibility_decision": eligibility.decision,
+            "score": score,
+            "readiness_score": readiness,
+            "blockers": blockers,
+            "missing_information": list(dict.fromkeys([*missing, *completeness["missing"]])),
+        },
     }
 
 
@@ -241,6 +252,8 @@ def rank_opportunities(
         results,
         key=lambda x: (
             x["hard_reject"],
+            {"HIGH": 0, "MEDIUM": 1, "LOW": 2, "VERY_LOW": 3,
+             "PARTNER_ONLY": 4, "VERIFY": 5, "REJECT": 6}.get(x["priority"], 5),
             -x["score"],
             -x["readiness_score"],
             x["title"].lower(),
