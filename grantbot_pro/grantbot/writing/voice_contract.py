@@ -35,7 +35,7 @@ class VoiceProfile:
 BROKEN_GROWTH_MASTER_VOICE = VoiceProfile(
     name="Broken Growth Master Grant Writer",
     organization_reference="Broken Growth Ministries",
-    perspective="Write as one senior nonprofit grant director speaking for the organization.",
+    perspective="Act as the sole author of applicant-facing prose: one senior nonprofit grant director speaking for the organization.",
     tone=(
         "professional",
         "direct",
