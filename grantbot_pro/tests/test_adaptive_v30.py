@@ -6,6 +6,7 @@ import pytest
 
 from grantbot.agents.crewai_multimodel import _candidate_models, ai_policy
 from grantbot.intelligence.adaptive_v30 import (
+    analyze_strategic_decision,
     consistency_audit,
     funder_profile,
     model_performance,
@@ -82,6 +83,43 @@ def test_hard_blocker_forces_hold() -> None:
     )
     assert result.pursuit_priority == "HOLD"
     assert result.score < 25
+
+
+def test_strategic_decision_exposes_uncertainty_and_questions() -> None:
+    result = analyze_strategic_decision(
+        award_amount=500_000,
+        win_probability=0.30,
+        win_probability_low=0.10,
+        win_probability_high=0.50,
+        estimated_hours=100,
+        hourly_cost=75,
+        strategic_fit=90,
+        eligibility_confidence=85,
+        award_value_score=90,
+        application_effort_score=70,
+        deadline_feasibility=80,
+        organizational_readiness=80,
+        evidence_confidence=60,
+        risk_tolerance=0.25,
+        alternative_expected_value=20_000,
+    )
+    assert result.expected_value_range == {"low": 42_500, "base": 142_500, "high": 242_500}
+    assert result.risk_adjusted_score < result.base_score
+    assert result.confidence == pytest.approx(0.4)
+    assert any("narrow" in question for question in result.questions_to_resolve)
+    assert result.human_review_required is True
+
+
+def test_strategic_decision_rejects_incoherent_probability_range() -> None:
+    with pytest.raises(ValueError, match="ordered"):
+        analyze_strategic_decision(
+            award_amount=100_000, win_probability=0.4,
+            win_probability_low=0.5, win_probability_high=0.6,
+            estimated_hours=10, hourly_cost=50, strategic_fit=80,
+            eligibility_confidence=80, award_value_score=80,
+            application_effort_score=80, deadline_feasibility=80,
+            organizational_readiness=80, evidence_confidence=80,
+        )
 
 
 def test_model_telemetry_ranks_successful_high_quality_model(tmp_path: Path) -> None:

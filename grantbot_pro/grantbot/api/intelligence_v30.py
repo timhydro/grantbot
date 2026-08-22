@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from grantbot.agents.adversarial_panel_v30 import panel_status, run_adversarial_panel
 from grantbot.intelligence.adaptive_v30 import (
+    analyze_strategic_decision,
     consistency_audit,
     funder_profile,
     intelligence_status,
@@ -35,6 +36,15 @@ class OpportunityScoreRequest(BaseModel):
     deadline_feasibility: float = Field(ge=0, le=100)
     organizational_readiness: float = Field(ge=0, le=100)
     hard_blockers: list[str] = Field(default_factory=list, max_length=100)
+
+
+class StrategicDecisionRequest(OpportunityScoreRequest):
+    win_probability_low: float = Field(ge=0, le=1)
+    win_probability_high: float = Field(ge=0, le=1)
+    hourly_cost: float = Field(default=0, ge=0)
+    evidence_confidence: float = Field(ge=0, le=100)
+    risk_tolerance: float = Field(default=0.5, ge=0, le=1)
+    alternative_expected_value: float = Field(default=0, ge=0)
 
 
 class ModelRunRequest(BaseModel):
@@ -113,6 +123,19 @@ def opportunity_score(
 ) -> dict[str, Any]:
     del principal
     return score_opportunity(**payload.model_dump()).to_dict()
+
+
+@router.post("/strategic-decision")
+def strategic_decision(
+    payload: StrategicDecisionRequest,
+    principal: Principal = Depends(require_roles(ADMIN, GRANT_WRITER, REVIEWER)),
+) -> dict[str, Any]:
+    """Return an explainable, uncertainty-aware pursuit recommendation."""
+    del principal
+    try:
+        return analyze_strategic_decision(**payload.model_dump()).to_dict()
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.post("/model-runs")
