@@ -38,6 +38,27 @@ class OpportunityValueResult:
 
 
 @dataclass(frozen=True, slots=True)
+class StrategicDecisionResult:
+    """An uncertainty-aware recommendation, not a claim of autonomous judgment."""
+
+    recommendation: str
+    confidence: float
+    base_score: float
+    risk_adjusted_score: float
+    expected_funding_value: float
+    expected_value_range: dict[str, float]
+    downside_exposure: float
+    key_drivers: list[dict[str, Any]]
+    assumptions: list[str]
+    questions_to_resolve: list[str]
+    rationale: list[str]
+    human_review_required: bool = True
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
 class ProvenanceSupport:
     sentence_index: int
     sentence: str
@@ -372,6 +393,120 @@ def score_opportunity(
         components={key: round(value, 2) for key, value in components.items()},
         blockers=blockers,
         rationale=rationale,
+    )
+
+
+def analyze_strategic_decision(
+    *,
+    award_amount: float,
+    win_probability: float,
+    win_probability_low: float,
+    win_probability_high: float,
+    estimated_hours: float,
+    hourly_cost: float,
+    strategic_fit: float,
+    eligibility_confidence: float,
+    award_value_score: float,
+    application_effort_score: float,
+    deadline_feasibility: float,
+    organizational_readiness: float,
+    evidence_confidence: float,
+    risk_tolerance: float = 0.5,
+    alternative_expected_value: float = 0.0,
+    hard_blockers: Sequence[str] | None = None,
+) -> StrategicDecisionResult:
+    """Evaluate a pursuit with uncertainty, cost, evidence quality, and opportunity cost.
+
+    ``risk_tolerance`` ranges from 0 (conservative) to 1 (risk tolerant).  The
+    returned explanation exposes assumptions and score drivers so a human can
+    challenge the recommendation instead of treating it as an opaque verdict.
+    """
+    probabilities = (win_probability_low, win_probability, win_probability_high)
+    if any(not 0.0 <= value <= 1.0 for value in probabilities):
+        raise ValueError("win probabilities must be between 0 and 1")
+    if not win_probability_low <= win_probability <= win_probability_high:
+        raise ValueError("win probabilities must be ordered low <= base <= high")
+    if hourly_cost < 0 or alternative_expected_value < 0:
+        raise ValueError("hourly_cost and alternative_expected_value cannot be negative")
+    if not 0.0 <= risk_tolerance <= 1.0:
+        raise ValueError("risk_tolerance must be between 0 and 1")
+    if not 0.0 <= evidence_confidence <= 100.0:
+        raise ValueError("evidence_confidence must be between 0 and 100")
+
+    base = score_opportunity(
+        award_amount=award_amount,
+        win_probability=win_probability,
+        estimated_hours=estimated_hours,
+        strategic_fit=strategic_fit,
+        eligibility_confidence=eligibility_confidence,
+        award_value_score=award_value_score,
+        application_effort_score=application_effort_score,
+        deadline_feasibility=deadline_feasibility,
+        organizational_readiness=organizational_readiness,
+        hard_blockers=hard_blockers,
+    )
+    application_cost = estimated_hours * hourly_cost
+    low_value = award_amount * win_probability_low - application_cost
+    base_value = award_amount * win_probability - application_cost
+    high_value = award_amount * win_probability_high - application_cost
+    uncertainty_width = (win_probability_high - win_probability_low) * 100.0
+    uncertainty_penalty = uncertainty_width * (1.0 - risk_tolerance) * 0.35
+    evidence_penalty = (100.0 - evidence_confidence) * 0.20
+    opportunity_cost_penalty = min(20.0, (alternative_expected_value / max(award_amount, 1.0)) * 100.0)
+    risk_adjusted = _clamp(base.score - uncertainty_penalty - evidence_penalty - opportunity_cost_penalty)
+    if base.blockers:
+        risk_adjusted = min(risk_adjusted, 24.99)
+
+    if base.blockers:
+        recommendation = "HOLD"
+    elif base_value <= alternative_expected_value:
+        recommendation = "DEPRIORITIZE"
+    elif risk_adjusted >= 75:
+        recommendation = "PURSUE"
+    elif risk_adjusted >= 55:
+        recommendation = "CONDITIONAL_PURSUE"
+    else:
+        recommendation = "MONITOR"
+
+    components = dict(base.components)
+    components["evidence_confidence"] = evidence_confidence
+    key_drivers = [
+        {"factor": name, "score": round(value, 2), "direction": "supports" if value >= 70 else "constrains"}
+        for name, value in sorted(components.items(), key=lambda item: abs(item[1] - 50), reverse=True)[:4]
+    ]
+    questions: list[str] = []
+    if uncertainty_width > 20:
+        questions.append("What comparable awards or funder history can narrow the win-probability range?")
+    if evidence_confidence < 70:
+        questions.append("Which eligibility, need, outcome, or capacity claims still require authoritative evidence?")
+    if eligibility_confidence < 80:
+        questions.append("Can the official solicitation confirm applicant eligibility before more work is invested?")
+    if base_value <= alternative_expected_value:
+        questions.append("Does this pursuit create strategic value that justifies displacing the stronger alternative?")
+    if not questions:
+        questions.append("Has an authorized reviewer validated the assumptions and capacity commitments?")
+
+    confidence = _clamp(evidence_confidence - uncertainty_width * 0.5) / 100.0
+    return StrategicDecisionResult(
+        recommendation=recommendation,
+        confidence=round(confidence, 3),
+        base_score=round(base.score, 2),
+        risk_adjusted_score=round(risk_adjusted, 2),
+        expected_funding_value=round(base_value, 2),
+        expected_value_range={"low": round(low_value, 2), "base": round(base_value, 2), "high": round(high_value, 2)},
+        downside_exposure=round(application_cost + alternative_expected_value, 2),
+        key_drivers=key_drivers,
+        assumptions=[
+            f"Win probability is estimated at {win_probability:.1%} within a {win_probability_low:.1%}-{win_probability_high:.1%} range.",
+            f"Application effort is valued at ${hourly_cost:,.2f} per hour for {estimated_hours:,.1f} hours.",
+            f"Evidence confidence is {evidence_confidence:.1f}/100 and risk tolerance is {risk_tolerance:.2f}/1.",
+        ],
+        questions_to_resolve=questions,
+        rationale=base.rationale + [
+            f"Uncertainty reduced the score by {uncertainty_penalty:.2f} points.",
+            f"Evidence quality reduced the score by {evidence_penalty:.2f} points.",
+            f"The displaced alternative has an expected value of ${alternative_expected_value:,.2f}.",
+        ],
     )
 
 
