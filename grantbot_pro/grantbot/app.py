@@ -11,18 +11,19 @@ app = FastAPI(
     version=__version__,
     description=(
         "Unified funding intelligence, mission-aware discovery ranking, canonical "
-        "organization knowledge, production single-voice multi-model grant and IRS "
-        "application writing, authoritative compliance, financial consistency, "
-        "evidence-calibrated risk, adjudicated human learning, post-award management, "
-        "executive portfolio command center, controlled organizational document vault, "
-        "CrewAI orchestration, persistent workflow control, and human-gated application platform."
+        "organization knowledge, production single-voice adaptive multi-model grant and IRS "
+        "application writing, cloud-first role routing, model telemetry, funder memory, "
+        "opportunity portfolio scoring, sentence-level provenance, adversarial review, "
+        "authoritative compliance, financial consistency, evidence-calibrated risk, "
+        "adjudicated human learning, post-award management, executive portfolio command center, "
+        "controlled organizational document vault, CrewAI orchestration, persistent workflow control, "
+        "and human-gated application platform."
     ),
 )
 
 
 @app.get("/", tags=["system"])
 def root() -> dict[str, str]:
-    """Return a stable, dependency-free identity response for operators."""
     return {
         "name": __app_name__,
         "organization": __organization__,
@@ -35,7 +36,6 @@ def root() -> dict[str, str]:
 
 @app.get("/health", tags=["system"])
 def health() -> dict[str, str]:
-    """Lightweight liveness endpoint that does not require external services."""
     return {
         "status": "ok",
         "service": __app_name__,
@@ -62,10 +62,7 @@ from grantbot.api.partners_v12 import router as partners_v12_router
 from grantbot.api.nofo_v13 import router as nofo_v13_router
 from grantbot.api.matching_v14 import router as matching_v14_router
 from grantbot.api.readiness_v15 import router as readiness_v15_router
-from grantbot.api.live_queue_v16 import (
-    compat_router as live_queue_v16_compat_router,
-    router as live_queue_v16_router,
-)
+from grantbot.api.live_queue_v16 import compat_router as live_queue_v16_compat_router, router as live_queue_v16_router
 from grantbot.api.staging_v17 import router as staging_v17_router
 from grantbot.api.application_writer_v18 import router as application_writer_v18_router
 from grantbot.api.packet_v19 import router as packet_v19_router
@@ -87,6 +84,7 @@ from grantbot.api.workflow_v27 import router as workflow_v27_router
 from grantbot.api.irs1023_v28 import router as irs1023_v28_router
 from grantbot.api.multimodel_v28 import router as multimodel_v28_router
 from grantbot.api.production_v29 import router as production_v29_router
+from grantbot.api.intelligence_v30 import router as intelligence_v30_router
 
 app.include_router(master_pipeline_v5_router)
 app.include_router(discovery_v6_router)
@@ -122,3 +120,4 @@ app.include_router(workflow_v27_router)
 app.include_router(irs1023_v28_router)
 app.include_router(multimodel_v28_router)
 app.include_router(production_v29_router)
+app.include_router(intelligence_v30_router)
