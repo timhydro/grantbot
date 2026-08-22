@@ -46,8 +46,13 @@ class ProductionV29Tests(unittest.TestCase):
             for role in ROLE_ORDER
         }
 
-    def test_version_is_v29(self) -> None:
-        self.assertEqual(__version__, "29.0.0")
+    def test_v29_surface_remains_available_after_package_upgrade(self) -> None:
+        major = int(__version__.split(".", 1)[0])
+        self.assertGreaterEqual(major, 29)
+        schema = app.openapi()
+        self.assertIn("/v29/production/status", schema["paths"])
+        self.assertIn("/v29/production/answer", schema["paths"])
+        self.assertIn("/v29/production/irs1023/build", schema["paths"])
 
     def test_voice_contract_requires_single_author(self) -> None:
         contract = render_voice_contract().lower()
