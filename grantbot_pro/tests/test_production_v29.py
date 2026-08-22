@@ -99,14 +99,14 @@ class ProductionV29Tests(unittest.TestCase):
                 "fact_id": "fact-1",
                 "fact_key": "program_model",
                 "category": "program",
-                "value": "Broken Growth provides housing and workforce support for participants.",
+                "value": "Broken Growth provides housing and workforce support for participants through a coordinated program designed around stability and employment.",
                 "verification_state": "VERIFIED",
                 "source": "board-approved program record",
             }
         ]
         quality, claims, voice = _deterministic_checks(
             question="Describe the housing and workforce support program.",
-            final_answer="Broken Growth provides housing and workforce support for participants.",
+            final_answer="Broken Growth provides housing and workforce support for participants through a coordinated program designed around stability and employment.",
             facts=facts,
             dossier="The application requests a description of housing and workforce support.",
             max_words=100,
