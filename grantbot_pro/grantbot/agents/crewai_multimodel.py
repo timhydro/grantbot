@@ -26,6 +26,8 @@ ROLE_ORDER = (
     "red_team",
     "readiness",
 )
+SUPPORTED_AI_POLICIES = {"cloud_first", "balanced", "local_first"}
+DEFAULT_AI_POLICY = "cloud_first"
 
 ROLE_ENV_VARS = {
     "research": "GRANTBOT_CREWAI_RESEARCH_MODEL",
@@ -43,6 +45,39 @@ ROLE_TEMPERATURES = {
     "writing": 0.30,
     "red_team": 0.05,
     "readiness": 0.00,
+}
+
+ROLE_CLOUD_PRIORITY: dict[str, tuple[tuple[str, str], ...]] = {
+    "research": (
+        ("CEREBRAS_API_KEY", "cerebras/gpt-oss-120b"),
+        ("GROQ_API_KEY", "groq/openai/gpt-oss-120b"),
+        ("GEMINI_API_KEY", "gemini/gemini-2.5-flash"),
+    ),
+    "eligibility": (
+        ("GEMINI_API_KEY", "gemini/gemini-2.5-flash"),
+        ("GROQ_API_KEY", "groq/openai/gpt-oss-120b"),
+        ("MISTRAL_API_KEY", "mistral/mistral-large-latest"),
+    ),
+    "strategy": (
+        ("GEMINI_API_KEY", "gemini/gemini-2.5-flash"),
+        ("MISTRAL_API_KEY", "mistral/mistral-large-latest"),
+        ("GROQ_API_KEY", "groq/openai/gpt-oss-120b"),
+    ),
+    "writing": (
+        ("MISTRAL_API_KEY", "mistral/mistral-large-latest"),
+        ("GEMINI_API_KEY", "gemini/gemini-2.5-flash"),
+        ("GROQ_API_KEY", "groq/openai/gpt-oss-120b"),
+    ),
+    "red_team": (
+        ("GEMINI_API_KEY", "gemini/gemini-2.5-flash"),
+        ("CEREBRAS_API_KEY", "cerebras/gpt-oss-120b"),
+        ("GROQ_API_KEY", "groq/openai/gpt-oss-120b"),
+    ),
+    "readiness": (
+        ("GROQ_API_KEY", "groq/openai/gpt-oss-120b"),
+        ("GEMINI_API_KEY", "gemini/gemini-2.5-flash"),
+        ("CEREBRAS_API_KEY", "cerebras/gpt-oss-120b"),
+    ),
 }
 
 
@@ -78,6 +113,40 @@ def _truthy(value: str | None) -> bool:
     return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def ai_policy(environment: Mapping[str, str] | None = None) -> str:
+    env = environment or os.environ
+    policy = str(env.get("GRANTBOT_AI_POLICY", DEFAULT_AI_POLICY)).strip().lower()
+    if policy not in SUPPORTED_AI_POLICIES:
+        raise ValueError(
+            f"GRANTBOT_AI_POLICY must be one of {sorted(SUPPORTED_AI_POLICIES)}; received {policy!r}"
+        )
+    return policy
+
+
+def _cloud_candidates(role: str, env: Mapping[str, str]) -> list[str]:
+    candidates: list[str] = []
+    metered = _truthy(env.get("GRANTBOT_ALLOW_METERED_AI"))
+
+    xai_model = str(env.get("GRANTBOT_XAI_MODEL", "")).strip()
+    if (
+        metered
+        and role in {"strategy", "writing"}
+        and env.get("XAI_API_KEY", "").strip()
+        and xai_model.startswith("xai/")
+    ):
+        candidates.append(xai_model)
+
+    if metered:
+        for key_name, model in ROLE_CLOUD_PRIORITY[role]:
+            if env.get(key_name, "").strip():
+                candidates.append(model)
+
+    if env.get("OPENROUTER_API_KEY", "").strip():
+        candidates.append("openrouter/openrouter/free")
+
+    return candidates
+
+
 def _candidate_models(role: str, env: Mapping[str, str]) -> list[str]:
     if role not in ROLE_ORDER:
         raise ValueError(f"Unknown CrewAI role: {role}")
@@ -86,58 +155,22 @@ def _candidate_models(role: str, env: Mapping[str, str]) -> list[str]:
     if explicit:
         return [explicit]
 
-    candidates: list[str] = []
-    metered = _truthy(env.get("GRANTBOT_ALLOW_METERED_AI"))
-
-    if metered:
-        xai_model = str(env.get("GRANTBOT_XAI_MODEL", "")).strip()
-        if role in {"strategy", "writing"} and env.get("XAI_API_KEY", "").strip() and xai_model.startswith("xai/"):
-            candidates.append(xai_model)
-
-        role_priority = {
-            "research": (
-                ("CEREBRAS_API_KEY", "cerebras/gpt-oss-120b"),
-                ("GROQ_API_KEY", "groq/openai/gpt-oss-120b"),
-                ("GEMINI_API_KEY", "gemini/gemini-2.5-flash"),
-            ),
-            "eligibility": (
-                ("GEMINI_API_KEY", "gemini/gemini-2.5-flash"),
-                ("GROQ_API_KEY", "groq/openai/gpt-oss-120b"),
-                ("MISTRAL_API_KEY", "mistral/mistral-large-latest"),
-            ),
-            "strategy": (
-                ("GEMINI_API_KEY", "gemini/gemini-2.5-flash"),
-                ("MISTRAL_API_KEY", "mistral/mistral-large-latest"),
-                ("GROQ_API_KEY", "groq/openai/gpt-oss-120b"),
-            ),
-            "writing": (
-                ("MISTRAL_API_KEY", "mistral/mistral-large-latest"),
-                ("GEMINI_API_KEY", "gemini/gemini-2.5-flash"),
-                ("GROQ_API_KEY", "groq/openai/gpt-oss-120b"),
-            ),
-            "red_team": (
-                ("GEMINI_API_KEY", "gemini/gemini-2.5-flash"),
-                ("CEREBRAS_API_KEY", "cerebras/gpt-oss-120b"),
-                ("GROQ_API_KEY", "groq/openai/gpt-oss-120b"),
-            ),
-            "readiness": (
-                ("GROQ_API_KEY", "groq/openai/gpt-oss-120b"),
-                ("GEMINI_API_KEY", "gemini/gemini-2.5-flash"),
-                ("CEREBRAS_API_KEY", "cerebras/gpt-oss-120b"),
-            ),
-        }
-        for key_name, model in role_priority[role]:
-            if env.get(key_name, "").strip():
-                candidates.append(model)
-
-    if env.get("OPENROUTER_API_KEY", "").strip():
-        candidates.append("openrouter/openrouter/free")
-
+    policy = ai_policy(env)
+    cloud = _cloud_candidates(role, env)
     global_model = str(env.get("GRANTBOT_CREWAI_MODEL", "")).strip()
-    if global_model:
-        candidates.append(global_model)
+    local_or_global: list[str] = [global_model] if global_model else []
 
-    return list(dict.fromkeys(candidates))
+    if policy == "local_first":
+        candidates = local_or_global + cloud
+    elif policy == "balanced":
+        if role in {"research", "eligibility", "red_team", "readiness"}:
+            candidates = cloud + local_or_global
+        else:
+            candidates = local_or_global + cloud if global_model.startswith("ollama/") else cloud + local_or_global
+    else:
+        candidates = cloud + local_or_global
+
+    return list(dict.fromkeys(model for model in candidates if model))
 
 
 def resolve_role_runtime(
@@ -146,6 +179,7 @@ def resolve_role_runtime(
     environment: Mapping[str, str] | None = None,
 ) -> CrewRuntime:
     env = dict(environment or os.environ)
+    policy = ai_policy(env)
     attempted: list[str] = []
 
     for model in _candidate_models(role, env):
@@ -157,7 +191,7 @@ def resolve_role_runtime(
                 provider=runtime.provider,
                 model=runtime.model,
                 base_url=runtime.base_url,
-                mode=f"role:{role}:{runtime.mode}",
+                mode=f"role:{role}:policy:{policy}:{runtime.mode}",
             )
 
     fallback = resolve_runtime()
@@ -167,7 +201,7 @@ def resolve_role_runtime(
             provider=fallback.provider,
             model=fallback.model,
             base_url=fallback.base_url,
-            mode=f"role:{role}:fallback:{fallback.mode}",
+            mode=f"role:{role}:policy:{policy}:fallback:{fallback.mode}",
         )
 
     attempted_text = ", ".join(attempted) if attempted else "no role-specific candidates"
@@ -176,7 +210,7 @@ def resolve_role_runtime(
         provider="none",
         model=None,
         base_url=None,
-        mode=f"role:{role}:unavailable",
+        mode=f"role:{role}:policy:{policy}:unavailable",
         reason=f"No usable model for role {role}; attempted {attempted_text}. {fallback.reason or ''}".strip(),
     )
 
@@ -196,11 +230,13 @@ def role_plan_status(
     *,
     environment: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
-    plan = resolve_role_plan(environment=environment)
+    env = dict(environment or os.environ)
+    plan = resolve_role_plan(environment=env)
     return {
         "available": all(runtime.available for runtime in plan.values()),
         "orchestration": ORCHESTRATION_MODE,
-        "metered_ai_enabled": _truthy((environment or os.environ).get("GRANTBOT_ALLOW_METERED_AI")),
+        "ai_policy": ai_policy(env),
+        "metered_ai_enabled": _truthy(env.get("GRANTBOT_ALLOW_METERED_AI")),
         "roles": {
             role: {
                 "available": runtime.available,
@@ -446,6 +482,7 @@ def _stage_multimodel_result(
     record = {
         "created_at": timestamp.isoformat(),
         "orchestration": ORCHESTRATION_MODE,
+        "ai_policy": ai_policy(),
         "role_models": role_models,
         "question": question,
         "max_words": max_words,
