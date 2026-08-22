@@ -33,6 +33,7 @@ agents = [
 [project.scripts]
 grantbot = "grantbot.__main__:main"
 grantbot-live-federal = "grantbot.discovery.live_federal:main"
+grantbot-irs1023-v29 = "grantbot.production.irs1023_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
