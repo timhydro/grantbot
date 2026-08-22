@@ -2,15 +2,17 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from grantbot.agents.crewai_runtime import crewai_status, kickoff_grant_crew
+from grantbot.agents.crewai_flow import kickoff_grant_flow
+from grantbot.agents.crewai_runtime import crewai_status
 from grantbot.agents.pipeline_v26 import AGENT_ROLES, build_execution_plan, write_and_plan
 from grantbot.agents.research_v26 import build_evidence_brief
 from grantbot.eligibility.tax_status import TaxStatus
 from grantbot.funding.live_runner import run_live_discovery
 from grantbot.matching.competitive_v14 import analyze_competitiveness
+from grantbot.security.auth import ADMIN, GRANT_WRITER, REVIEWER, Principal, require_roles
 
 
 router = APIRouter(prefix="/v26/agents", tags=["GrantBot Agentic Pipeline v26"])
@@ -46,8 +48,7 @@ class CrewRequest(BaseModel):
     dossier: str = Field(min_length=1, max_length=100000)
     question: str = Field(min_length=1, max_length=10000)
     max_words: int | None = Field(default=None, ge=1, le=10000)
-    model: str | None = None
-    base_url: str | None = None
+    model: str | None = Field(default=None, max_length=300)
 
 
 class DiscoveryRequest(BaseModel):
@@ -74,7 +75,7 @@ def health() -> dict[str, Any]:
     return {
         "status": "ok",
         "version": 26,
-        "mode": "cost-protected-human-gated",
+        "mode": "crewai-flow-cost-protected-human-gated",
         "roles": list(AGENT_ROLES),
         "crewai": crewai_status().to_dict(),
         "safe_to_submit": False,
@@ -137,38 +138,52 @@ def write_plan(payload: WritePlanRequest) -> dict[str, Any]:
             max_words=payload.max_words,
         )
     except (ValueError, RuntimeError) as exc:
-        raise HTTPException(status_code=422 if isinstance(exc, ValueError) else 503, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=422 if isinstance(exc, ValueError) else 503,
+            detail=str(exc),
+        ) from exc
 
 
 @router.post("/crew")
-def crew(payload: CrewRequest) -> dict[str, Any]:
+def crew(
+    payload: CrewRequest,
+    principal: Principal = Depends(require_roles(ADMIN, GRANT_WRITER, REVIEWER)),
+) -> dict[str, Any]:
+    del principal
+
     status = crewai_status()
     if not status.installed:
         raise HTTPException(
             status_code=503,
-            detail="CrewAI optional dependencies are not installed. Install GrantBot with: pip install -e '.[agents]'",
+            detail=(
+                "CrewAI optional dependencies are not installed. Install GrantBot with: "
+                "python -m pip install -e '.[agents]'"
+            ),
         )
     if not status.available and payload.model is None:
         raise HTTPException(status_code=503, detail=status.error or "No CrewAI runtime is available")
 
     try:
-        result = kickoff_grant_crew(
+        result = kickoff_grant_flow(
             dossier=payload.dossier,
             question=payload.question,
             max_words=payload.max_words,
             model=payload.model,
-            base_url=payload.base_url,
         )
-    except (ValueError, RuntimeError) as exc:
-        raise HTTPException(status_code=422 if isinstance(exc, ValueError) else 503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     return {
-        "status": "READY_FOR_HUMAN_REVIEW",
+        "status": result.status,
+        "orchestration": result.orchestration,
         "output": result.output,
         "provider": result.provider,
         "model": result.model,
         "staging_artifact": result.artifact_path,
         "staging_sha256": result.artifact_sha256,
+        "human_review_required": True,
         "external_side_effects_performed": False,
         "submission_performed": False,
         "safe_to_submit": False,
