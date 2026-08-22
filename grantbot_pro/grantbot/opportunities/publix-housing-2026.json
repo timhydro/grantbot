@@ -1,0 +1,651 @@
+{
+  "opportunity_id": "publix-housing-shelter-support-2026",
+  "opportunity_name": "Publix Super Markets Charities — Housing and Shelter Support 2026",
+  "funder": "Publix Super Markets Charities",
+  "funding_type": "Corporate charitable grant request",
+  "deadline": "2026-08-31",
+  "source_url": "https://publixcharities.org/request-support/",
+  "source_verified_on": "2026-08-22",
+  "task_update": {
+    "source": "Unread Gmail task update",
+    "message_id": "1a0253a6945346dd",
+    "subject": "[Task Update] Funding Source Watch: Publix housing grant deadline August 31",
+    "received_date": "2026-08-21"
+  },
+  "official_sources": [
+    {
+      "title": "Publix Charities — Request Support",
+      "url": "https://publixcharities.org/request-support/",
+      "supports": "Housing and shelter request window, August 31 deadline, Southeast service-area qualification, registration, login, and help contact",
+      "verified_on": "2026-08-22"
+    },
+    {
+      "title": "Publix Charities — Online Request FAQ",
+      "url": "https://publixcharities.org/request-support/faq/",
+      "supports": "Registration sequence, pending 501(c)(3) EIN workflow, browser guidance, amendment restriction, and application-status process",
+      "verified_on": "2026-08-22"
+    },
+    {
+      "title": "Publix Charities — Reducing Housing Insecurity and Homelessness",
+      "url": "https://publixcharities.org/reducing-homelessness/",
+      "supports": "Housing focus, emphasis on safety, independence, hope, and support for nonprofit housing and shelter providers across the Southeast",
+      "verified_on": "2026-08-22"
+    },
+    {
+      "title": "Publix Charitable Donations — Organization Registration",
+      "url": "https://charitabledonations.publix.com/s_csignup.jsp",
+      "supports": "Publicly visible organization and contact registration fields; application questions and attachments still require authenticated portal verification",
+      "verified_on": "2026-08-21"
+    },
+    {
+      "title": "FL-511 — 2026 Point-in-Time and Housing Inventory Count Final Report",
+      "url": "https://www.odnwfl.org/_files/ugd/4be2f3_ae63e640a05840e098be6b05f0c9e4a7.pdf",
+      "supports": "Current two-county homelessness snapshot, including total, unsheltered, adult-only, and chronic-homelessness counts",
+      "verified_on": "2026-08-22"
+    }
+  ],
+  "external_evidence": [
+    {
+      "id": "fl511-pit-2026",
+      "label": "FL-511 2026 Point-in-Time and Housing Inventory Count",
+      "source_url": "https://www.odnwfl.org/_files/ugd/4be2f3_ae63e640a05840e098be6b05f0c9e4a7.pdf",
+      "source_date": "2026-01-26",
+      "geography": "Pensacola/Escambia and Santa Rosa Counties Continuum of Care",
+      "source_values": "The FL-511 January 26, 2026 count reported 1,150 people experiencing homelessness: 311 in emergency shelter, 416 in transitional housing, and 423 unsheltered. Adult-only households accounted for 1,124 people, including 410 unsheltered adults. The report identified 248 people experiencing chronic homelessness, including 214 who were unsheltered.",
+      "executive_language": "The FL-511 January 2026 Point-in-Time Count documented 1,150 people experiencing homelessness across the Pensacola/Escambia and Santa Rosa Counties CoC, including 423 people who were unsheltered.",
+      "application_language": "The FL-511 January 26, 2026 Point-in-Time Count documented 1,150 people experiencing homelessness across the Pensacola/Escambia and Santa Rosa Counties Continuum of Care: 311 in emergency shelter, 416 in transitional housing, and 423 unsheltered. Adult-only households accounted for 1,124 people, including 410 unsheltered adults; 248 people met the chronic-homelessness definition, including 214 who were unsheltered.",
+      "caveat": "A PIT count is a single-night snapshot across the two-county CoC and must not be described as annual prevalence or as an Escambia-only count."
+    }
+  ],
+  "priorities": [
+    "Reduce housing insecurity and homelessness",
+    "Provide housing and shelter services in Publix's Southeastern service area",
+    "Help people gain safety, independence, and hope through stable housing",
+    "Demonstrate a credible nonprofit organization, local service model, and accountable use of funds"
+  ],
+  "request": {
+    "project_name": "Broken Growth Ministries Reentry and Transitional Housing Pallet Village",
+    "amount": null,
+    "period": null,
+    "request_strategy": "Seek a right-sized, board-approved housing and shelter implementation request that can be supported by current quotes and the live portal's allowable-use guidance. Do not submit the full capital planning estimate as the request amount without Publix guidance and board approval."
+  },
+  "eligibility_checks": [
+    {
+      "id": "southeast-service-area",
+      "label": "Publix Southeast service area",
+      "requirement": "The organization must operate and/or serve clients in Florida, Georgia, Alabama, North Carolina, South Carolina, Tennessee, Virginia, or Kentucky.",
+      "source_url": "https://publixcharities.org/request-support/",
+      "evidence_fact_keys": [
+        "primary_geographic_focus"
+      ],
+      "mode": "any",
+      "required_substrings_any": [
+        "florida",
+        "georgia",
+        "alabama",
+        "north carolina",
+        "south carolina",
+        "tennessee",
+        "virginia",
+        "kentucky"
+      ],
+      "hard_fail_on_mismatch": true,
+      "action": "Confirm that current operations or clients fall within Publix's listed states."
+    },
+    {
+      "id": "housing-shelter-alignment",
+      "label": "Housing and shelter focus",
+      "requirement": "The request must relate to a housing or shelter program for the July 1 through August 31 cycle.",
+      "source_url": "https://publixcharities.org/request-support/",
+      "evidence_fact_keys": [
+        "mission_statement",
+        "program_model",
+        "pallet_shelter_model"
+      ],
+      "mode": "any",
+      "required_substrings_any": [
+        "housing",
+        "homelessness",
+        "shelter"
+      ],
+      "hard_fail_on_mismatch": true,
+      "action": "Reframe the request around direct housing and shelter outcomes or hold the application."
+    },
+    {
+      "id": "active-nonprofit",
+      "label": "Active nonprofit organization",
+      "requirement": "The applicant must be an organization eligible to register and request charitable support.",
+      "source_url": "https://publixcharities.org/request-support/",
+      "evidence_fact_keys": [
+        "organization_type",
+        "state_entity_status"
+      ],
+      "mode": "all",
+      "required_substrings_all": [
+        "nonprofit",
+        "active"
+      ],
+      "hard_fail_on_mismatch": false,
+      "action": "Confirm current state status and the live portal's applicant eligibility before submission."
+    },
+    {
+      "id": "pending-501c3-registration-route",
+      "label": "Pending 501(c)(3) registration route",
+      "requirement": "If an EIN has been issued but the IRS determination letter is still pending, the official FAQ directs the organization to answer No to the EIN question during registration.",
+      "source_url": "https://publixcharities.org/request-support/faq/",
+      "evidence_fact_keys": [
+        "tax_exempt_status",
+        "ein_issued_status"
+      ],
+      "mode": "all",
+      "required_substrings_all": [
+        "pending",
+        "ein"
+      ],
+      "hard_fail_on_mismatch": false,
+      "action": "Reconfirm tax status immediately before registration and follow the official FAQ or ask the Publix help desk."
+    }
+  ],
+  "required_portal_fields": [
+    {
+      "key": "registered_ein_answer",
+      "label": "Registered EIN answer",
+      "fact_keys": [
+        "tax_exempt_status"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "If the determination is still pending, answer No as directed by Publix's FAQ; reconfirm before entry."
+    },
+    {
+      "key": "ein",
+      "label": "Exact EIN",
+      "fact_keys": [
+        "ein"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Enter only from the IRS notice or W-9; never infer it. Follow the live portal's placement instructions."
+    },
+    {
+      "key": "legal_name",
+      "label": "Organization legal name",
+      "fact_keys": [
+        "legal_name"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Match the Florida and IRS records exactly."
+    },
+    {
+      "key": "organization_type",
+      "label": "Organization type",
+      "fact_keys": [
+        "organization_type"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Select the closest live-portal option and verify it before saving."
+    },
+    {
+      "key": "mission_statement",
+      "label": "Mission",
+      "fact_keys": [
+        "mission_statement"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Use the approved mission; shorten only if the live field limit requires it."
+    },
+    {
+      "key": "physical_address",
+      "label": "Organization physical address",
+      "fact_keys": [
+        "physical_address"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Supply the organization's official physical address. Do not substitute the proposed project site without authorization."
+    },
+    {
+      "key": "physical_city",
+      "label": "Physical city",
+      "fact_keys": [
+        "physical_city"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Match the official organization address."
+    },
+    {
+      "key": "physical_state",
+      "label": "Physical state",
+      "fact_keys": [
+        "physical_state"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Match the official organization address."
+    },
+    {
+      "key": "physical_county",
+      "label": "Physical county",
+      "fact_keys": [
+        "physical_county"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Verify the county; do not infer it from a mailing address."
+    },
+    {
+      "key": "physical_zip",
+      "label": "Physical ZIP code",
+      "fact_keys": [
+        "physical_zip"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Match the official organization address."
+    },
+    {
+      "key": "mailing_address",
+      "label": "Mailing address",
+      "fact_keys": [
+        "mailing_address"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Confirm carefully; Publix states approved checks are mailed to the profile's mailing address."
+    },
+    {
+      "key": "mailing_city",
+      "label": "Mailing city",
+      "fact_keys": [
+        "mailing_city"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Match the approved mailing address."
+    },
+    {
+      "key": "mailing_state",
+      "label": "Mailing state",
+      "fact_keys": [
+        "mailing_state"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Match the approved mailing address."
+    },
+    {
+      "key": "mailing_zip",
+      "label": "Mailing ZIP code",
+      "fact_keys": [
+        "mailing_zip"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Match the approved mailing address."
+    },
+    {
+      "key": "organization_phone",
+      "label": "Organization phone",
+      "fact_keys": [
+        "organization_phone"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Use an organization-controlled number monitored through the decision period."
+    },
+    {
+      "key": "organization_email",
+      "label": "Organization email",
+      "fact_keys": [
+        "organization_email"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Use an organization-controlled inbox and monitor spam/junk folders."
+    },
+    {
+      "key": "website",
+      "label": "Website",
+      "fact_keys": [
+        "website"
+      ],
+      "required": false,
+      "hard_gate": false,
+      "instructions": "Provide only a live, organization-controlled site."
+    },
+    {
+      "key": "social_media_status",
+      "label": "Social media yes/no",
+      "fact_keys": [
+        "social_media_status"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Answer accurately and supply only official organization profiles."
+    },
+    {
+      "key": "social_media_urls",
+      "label": "Social media URLs",
+      "fact_keys": [
+        "social_media_urls"
+      ],
+      "required": false,
+      "hard_gate": false,
+      "instructions": "Enter official profiles only if the answer above is Yes."
+    },
+    {
+      "key": "contact_first_name",
+      "label": "Applicant contact first name",
+      "fact_keys": [
+        "contact_first_name"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Must be an authorized employee, board member, or decision maker under Publix's registration guidance."
+    },
+    {
+      "key": "contact_last_name",
+      "label": "Applicant contact last name",
+      "fact_keys": [
+        "contact_last_name"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Match the account holder's legal/contact record."
+    },
+    {
+      "key": "contact_title",
+      "label": "Applicant contact title",
+      "fact_keys": [
+        "contact_title"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Confirm the title and authority to apply."
+    },
+    {
+      "key": "contact_phone",
+      "label": "Applicant contact phone",
+      "fact_keys": [
+        "contact_phone"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "Use a monitored number for application questions."
+    },
+    {
+      "key": "contact_email",
+      "label": "Applicant contact email",
+      "fact_keys": [
+        "contact_email"
+      ],
+      "required": true,
+      "hard_gate": true,
+      "instructions": "This inbox receives the password and decision notice; verify it before registration."
+    }
+  ],
+  "application_questions": [
+    {
+      "id": "executive-summary",
+      "label": "Executive Summary and Publix Fit",
+      "prompt": "Summarize the organization, proposed housing and shelter request, population served, geography, and alignment with Publix Charities' housing focus.",
+      "prompt_source": "PREPARATION_ONLY_NOT_PORTAL_VERBATIM",
+      "section_type": "executive_summary",
+      "max_words": 250,
+      "required_fact_keys": [
+        "legal_name",
+        "mission_statement",
+        "primary_geographic_focus"
+      ],
+      "supporting_fact_keys": [
+        "primary_populations",
+        "program_model",
+        "pallet_shelter_model",
+        "current_service_status"
+      ],
+      "external_evidence_ids": [
+        "fl511-pit-2026"
+      ]
+    },
+    {
+      "id": "community-need",
+      "label": "Community Need",
+      "prompt": "Describe the housing insecurity and homelessness need Broken Growth is positioned to address, who is affected, and why a combined housing and reentry response matters.",
+      "prompt_source": "PREPARATION_ONLY_NOT_PORTAL_VERBATIM",
+      "section_type": "statement_of_need",
+      "max_words": 350,
+      "required_fact_keys": [
+        "primary_populations",
+        "primary_geographic_focus"
+      ],
+      "supporting_fact_keys": [
+        "mission_statement",
+        "program_model"
+      ],
+      "external_evidence_ids": [
+        "fl511-pit-2026"
+      ]
+    },
+    {
+      "id": "program-design",
+      "label": "Housing and Shelter Program Design",
+      "prompt": "Describe the proposed housing and shelter model, participant supports, admission approach, safety structure, and path from immediate stability toward independence.",
+      "prompt_source": "PREPARATION_ONLY_NOT_PORTAL_VERBATIM",
+      "section_type": "program_design",
+      "max_words": 500,
+      "required_fact_keys": [
+        "program_model",
+        "pallet_shelter_model",
+        "eligibility_requirements"
+      ],
+      "supporting_fact_keys": [
+        "sobriety_requirement",
+        "stabilization_period",
+        "resident_length_of_stay",
+        "project_site_address"
+      ]
+    },
+    {
+      "id": "goals-objectives",
+      "label": "Goals and Measurable Objectives",
+      "prompt": "State the project goals, first-phase objectives, planned capacity, implementation dependencies, and measurable participant or program targets.",
+      "prompt_source": "PREPARATION_ONLY_NOT_PORTAL_VERBATIM",
+      "section_type": "goals_objectives",
+      "max_words": 350,
+      "required_fact_keys": [
+        "housing_capacity",
+        "projected_people_served"
+      ],
+      "supporting_fact_keys": [
+        "planned_tiny_homes",
+        "stabilization_period",
+        "resident_length_of_stay"
+      ]
+    },
+    {
+      "id": "outcomes-evaluation",
+      "label": "Outcomes and Evaluation",
+      "prompt": "Explain the outputs and outcomes Broken Growth will track, the data sources it will use, and how it will distinguish projections from achieved results.",
+      "prompt_source": "PREPARATION_ONLY_NOT_PORTAL_VERBATIM",
+      "section_type": "outcomes_evaluation",
+      "max_words": 350,
+      "required_fact_keys": [
+        "program_model"
+      ],
+      "supporting_fact_keys": [
+        "projected_people_served",
+        "eligibility_requirements"
+      ]
+    },
+    {
+      "id": "organizational-capacity",
+      "label": "Organizational Capacity",
+      "prompt": "Describe Broken Growth's legal standing, mission, leadership, governance, current service activity, and readiness to develop the housing program responsibly.",
+      "prompt_source": "PREPARATION_ONLY_NOT_PORTAL_VERBATIM",
+      "section_type": "organizational_capacity",
+      "max_words": 350,
+      "required_fact_keys": [
+        "state_entity_status",
+        "date_incorporated",
+        "executive_director",
+        "board_size"
+      ],
+      "supporting_fact_keys": [
+        "mission_statement",
+        "faith_identity",
+        "current_service_status",
+        "tax_exempt_status"
+      ]
+    },
+    {
+      "id": "project-readiness",
+      "label": "Project Readiness and Risk Controls",
+      "prompt": "Describe the proposed site and development phase, what is known, what still requires zoning, engineering, site-control, vendor, budget, or board confirmation, and how those risks will be managed.",
+      "prompt_source": "PREPARATION_ONLY_NOT_PORTAL_VERBATIM",
+      "section_type": "project_readiness",
+      "max_words": 400,
+      "required_fact_keys": [
+        "property_status",
+        "project_site_address"
+      ],
+      "supporting_fact_keys": [
+        "pallet_shelter_model",
+        "capital_planning_budget"
+      ]
+    },
+    {
+      "id": "partnerships",
+      "label": "Community Partnerships",
+      "prompt": "Describe confirmed housing, shelter, reentry, workforce, behavioral-health, faith, employer, transportation, or referral partners and each partner's role.",
+      "prompt_source": "PREPARATION_ONLY_NOT_PORTAL_VERBATIM",
+      "section_type": "partnerships",
+      "max_words": 300,
+      "required_fact_keys": [
+        "confirmed_partners"
+      ],
+      "supporting_fact_keys": [
+        "program_model"
+      ]
+    },
+    {
+      "id": "sustainability",
+      "label": "Financial and Program Sustainability",
+      "prompt": "Explain how the housing and shelter work will be sustained through diversified revenue, responsible resident contributions if approved, partnerships, and disciplined cost and outcome management.",
+      "prompt_source": "PREPARATION_ONLY_NOT_PORTAL_VERBATIM",
+      "section_type": "sustainability",
+      "max_words": 350,
+      "required_fact_keys": [
+        "funding_source_scope"
+      ],
+      "supporting_fact_keys": [
+        "resident_contribution_model",
+        "capital_planning_budget"
+      ]
+    },
+    {
+      "id": "budget-narrative",
+      "label": "Request Amount and Use of Funds",
+      "prompt": "State the exact amount requested from Publix, the allowable housing or shelter costs it will support, the basis for each line item, other committed or prospective funds, and how the request budget reconciles to the project plan.",
+      "prompt_source": "PREPARATION_ONLY_NOT_PORTAL_VERBATIM",
+      "section_type": "budget_narrative",
+      "max_words": 400,
+      "required_fact_keys": [
+        "amount_sought",
+        "program_budget"
+      ],
+      "supporting_fact_keys": [
+        "capital_planning_budget"
+      ]
+    }
+  ],
+  "attachment_checklist": [
+    {
+      "id": "live-portal-requirements",
+      "label": "Live portal questions, limits, certifications, and attachment list captured after login",
+      "required": true,
+      "evidence_fact_keys": [],
+      "instructions": "Capture these before finalizing; the public pages do not disclose the authenticated application form.",
+      "source_status": "TO_CONFIRM_IN_PORTAL"
+    },
+    {
+      "id": "irs-ein-notice",
+      "label": "IRS EIN issuance notice and current W-9",
+      "required": false,
+      "evidence_fact_keys": [],
+      "instructions": "Prepare for identity and payment verification if requested.",
+      "source_status": "RECOMMENDED_INTERNAL_FILE"
+    },
+    {
+      "id": "irs-determination-status",
+      "label": "Current IRS 501(c)(3) determination-status documentation",
+      "required": false,
+      "evidence_fact_keys": [],
+      "instructions": "Use the current IRS record; do not imply that a determination letter has been issued.",
+      "source_status": "RECOMMENDED_INTERNAL_FILE"
+    },
+    {
+      "id": "state-records",
+      "label": "Florida incorporation and active-status record",
+      "required": false,
+      "evidence_fact_keys": [],
+      "instructions": "Download a current official record if the portal requests it.",
+      "source_status": "RECOMMENDED_INTERNAL_FILE"
+    },
+    {
+      "id": "governance",
+      "label": "Board roster and conflict-of-interest policy",
+      "required": false,
+      "evidence_fact_keys": [],
+      "instructions": "Complete the secretary's full legal name and obtain current board approval.",
+      "source_status": "RECOMMENDED_INTERNAL_FILE"
+    },
+    {
+      "id": "financials",
+      "label": "Current organization budget, financial statements, and banking/payment details",
+      "required": false,
+      "evidence_fact_keys": [],
+      "instructions": "Use final, authorized records and transmit only through appropriate secure channels.",
+      "source_status": "RECOMMENDED_INTERNAL_FILE"
+    },
+    {
+      "id": "request-budget",
+      "label": "Board-approved Publix request budget and use-of-funds narrative",
+      "required": true,
+      "evidence_fact_keys": [
+        "program_budget"
+      ],
+      "instructions": "The request amount and every line item must reconcile and be supported by current assumptions or quotes.",
+      "source_status": "HUMAN_APPROVAL_REQUIRED"
+    },
+    {
+      "id": "site-control-readiness",
+      "label": "Site-control and project-readiness documentation",
+      "required": false,
+      "evidence_fact_keys": [],
+      "instructions": "Provide only verified title, lease, owner authorization, zoning, engineering, utility, or vendor documents; label pending items honestly.",
+      "source_status": "RECOMMENDED_IF_PROJECT_REQUEST"
+    },
+    {
+      "id": "partner-letters",
+      "label": "Letters documenting confirmed partner roles",
+      "required": false,
+      "evidence_fact_keys": [],
+      "instructions": "Include only signed or otherwise authorized commitments.",
+      "source_status": "RECOMMENDED_IF_AVAILABLE"
+    }
+  ],
+  "submission_steps": [
+    "Confirm that an authorized Broken Growth employee, board member, or decision maker will own the Publix account and application.",
+    "On a current desktop browser, register the organization or log in; if the 501(c)(3) determination remains pending, follow Publix's official FAQ and answer No to the EIN question.",
+    "Capture the exact live application prompts, character limits, required attachments, allowable uses, certifications, and any deadline time or timezone.",
+    "Return the captured prompts to GrantBot, map each prepared narrative to the exact field, and resolve every hard gate without inventing facts.",
+    "Set a right-sized request amount, complete the line-item budget from current quotes or documented assumptions, and obtain board or authorized-officer approval.",
+    "Run final claim, eligibility, budget, attachment, and consistency reviews; proofread the complete portal preview before submission.",
+    "Have the authorized human make all certifications and submit no later than August 31, 2026; save the submitted copy and confirmation number.",
+    "Because Publix states submitted applications cannot be edited in the portal, email the designated Publix contact if a correction becomes necessary rather than submitting a duplicate."
+  ]
+}
