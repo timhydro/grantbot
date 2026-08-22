@@ -4,6 +4,13 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "17 13 * * *"
+  pull_request:
+    paths:
+      - "grantbot_pro/grantbot/discovery/**"
+      - "grantbot_pro/tests/test_live_federal_status.py"
+      - "grantbot_pro/data/discovery/authority_sources.json"
+      - "grantbot_pro/pyproject.toml"
+      - ".github/workflows/grantbot-live-federal-sweep.yml"
 
 permissions:
   contents: read
@@ -38,6 +45,7 @@ jobs:
           python -m unittest -v tests.test_live_federal_status
 
       - name: Run live federal funding sweep
+        if: github.event_name != 'pull_request'
         run: |
           mkdir -p live_artifacts
           grantbot-live-federal \
@@ -48,6 +56,7 @@ jobs:
             | tee live_artifacts/live_federal_sweep.log
 
       - name: Upload human-review staging artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: grantbot-live-federal-sweep
