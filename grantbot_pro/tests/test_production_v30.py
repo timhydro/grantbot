@@ -10,15 +10,18 @@ from grantbot.production.master_tool_v30 import run_adaptive_application_answer
 
 class ProductionV30Tests(unittest.TestCase):
     def test_version_is_v30(self) -> None:
-        self.assertEqual(__version__, "30.0.0")
+        self.assertEqual(__version__, "30.2.0")
 
     def test_v30_routes_are_authenticated(self) -> None:
         schema = app.openapi()
         for path, method in (
             ("/v30/production/status", "get"),
             ("/v30/production/answer", "post"),
+            ("/v30/production/application-packet", "post"),
             ("/v30/intelligence/status", "get"),
             ("/v30/intelligence/opportunity-score", "post"),
+            ("/v30/intelligence/opportunity-assessment", "post"),
+            ("/v30/intelligence/opportunity-adjudications", "post"),
             ("/v30/intelligence/provenance", "post"),
             ("/v30/intelligence/consistency", "post"),
             ("/v30/intelligence/adversarial-panel", "post"),
