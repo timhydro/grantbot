@@ -1,0 +1,93 @@
+name: GrantBot Runtime Smoke
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  runtime-smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: grantbot_pro
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install runtime dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Boot GrantBot and prove live HTTP behavior
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export GRANTBOT_DATA_DIR="$RUNNER_TEMP/grantbot_runtime_smoke"
+          mkdir -p "$GRANTBOT_DATA_DIR"
+
+          python - <<'PY'
+          from grantbot.security.auth import ensure_admin_key
+          result = ensure_admin_key()
+          print("ADMIN_KEY_CREATED=", result["created"])
+          print("ADMIN_ROLE=", result["principal"]["role"])
+          PY
+
+          ADMIN_KEY="$(cat "$GRANTBOT_DATA_DIR/master_api_key.txt")"
+          python -m uvicorn grantbot.app:app --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/grantbot_uvicorn.log" 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8000/health >/dev/null; then
+              break
+            fi
+            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+              echo "GrantBot server exited before becoming healthy"
+              cat "$RUNNER_TEMP/grantbot_uvicorn.log"
+              exit 1
+            fi
+            sleep 1
+          done
+
+          curl -fsS http://127.0.0.1:8000/health >/dev/null
+
+          echo "=== ROOT ==="
+          curl -fsS http://127.0.0.1:8000/
+          echo
+
+          echo "=== HEALTH ==="
+          curl -fsS http://127.0.0.1:8000/health
+          echo
+
+          echo "=== V30 INTELLIGENCE STATUS ==="
+          curl -fsS -H "X-GrantBot-Key: $ADMIN_KEY" http://127.0.0.1:8000/v30/intelligence/status
+          echo
+
+          echo "=== V30 OPPORTUNITY SCORE ==="
+          SCORE_RESPONSE="$(curl -fsS \
+            -H "X-GrantBot-Key: $ADMIN_KEY" \
+            -H 'Content-Type: application/json' \
+            -d '{"award_amount":500000,"win_probability":0.22,"estimated_hours":25,"strategic_fit":92,"eligibility_confidence":88,"award_value_score":95,"application_effort_score":78,"deadline_feasibility":85,"organizational_readiness":80,"hard_blockers":[]}' \
+            http://127.0.0.1:8000/v30/intelligence/opportunity-score)"
+          echo "$SCORE_RESPONSE"
+
+          python - "$SCORE_RESPONSE" <<'PY'
+          import json
+          import sys
+
+          payload = json.loads(sys.argv[1])
+          assert payload["expected_funding_value"] == 110000.0, payload
+          assert payload["expected_value_per_hour"] == 4400.0, payload
+          assert payload["pursuit_priority"] in {"PRIORITIZE", "APPLY", "CONSIDER", "MONITOR"}, payload
+          print("RUNTIME_ASSERTIONS=PASS")
+          PY
+
+          echo "=== UVICORN LOG ==="
+          cat "$RUNNER_TEMP/grantbot_uvicorn.log"
