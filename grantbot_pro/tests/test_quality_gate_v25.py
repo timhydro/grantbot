@@ -73,3 +73,22 @@ def test_quality_gate_accepts_specific_supported_answer() -> None:
     )
     assert result.passed
     assert result.score >= 80
+
+
+def test_quality_gate_does_not_treat_trailing_comma_as_number() -> None:
+    result = evaluate_draft(
+        question="Describe the organization's incorporation date and leadership.",
+        draft=(
+            "The organization was incorporated on February 23, 2026. Its leadership and governance "
+            "structure support responsible program development, documented oversight, and human review "
+            "of legal, financial, property, and submission decisions."
+        ),
+        facts=[
+            {
+                "status": "VERIFIED",
+                "key": "date_incorporated",
+                "value": "2026-02-23",
+            }
+        ],
+    )
+    assert "23," not in result.unsupported_numbers
