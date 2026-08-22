@@ -40,6 +40,14 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .
 
+      - name: Static compile and CLI import check
+        run: |
+          python -m py_compile \
+            grantbot/discovery/status_guard.py \
+            grantbot/discovery/live_federal.py \
+            tests/test_live_federal_status.py
+          grantbot-live-federal --help >/dev/null
+
       - name: Run status guard regression tests
         run: |
           python -m unittest -v tests.test_live_federal_status
