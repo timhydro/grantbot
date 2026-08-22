@@ -46,6 +46,7 @@ jobs:
               "/v19/packet/{packet_id}/integrity",
               "/v24/funding/health",
               "/v24/funding/discover",
+              "/v26/agents/crew",
               "/master/health",
               "/master/system/versions",
               "/master/budget/calculate",
@@ -119,6 +120,7 @@ jobs:
               raise SystemExit("No FastAPI security scheme declared")
 
           protected_paths = (
+              ("/v26/agents/crew", "post"),
               ("/master/security/status", "get"),
               ("/v19/packet/{packet_id}/integrity", "get"),
               ("/v19/packet/{packet_id}/approve", "post"),
@@ -192,3 +194,61 @@ jobs:
               f"{len(paths)} routes"
           )
           PY
+
+  crewai-smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: grantbot_pro
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install tested CrewAI integration
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[agents,test]"
+
+      - name: Verify CrewAI Flow imports and security contract
+        run: |
+          python - <<'PY'
+          from importlib.metadata import version
+
+          from grantbot.agents.crewai_flow import GrantFlowState, build_grant_flow_class
+          from grantbot.agents.crewai_runtime import AGENT_COUNT, ORCHESTRATION_MODE
+          from grantbot.api.agentic_v26 import CrewRequest
+          from grantbot.app import app
+
+          crewai_version = tuple(int(part) for part in version("crewai").split(".")[:3])
+          if crewai_version < (1, 15, 17) or crewai_version >= (1, 16, 0):
+              raise SystemExit(f"Unexpected CrewAI version: {version('crewai')}")
+
+          if "base_url" in CrewRequest.model_fields:
+              raise SystemExit("CrewRequest exposes forbidden caller-controlled base_url")
+
+          flow_class = build_grant_flow_class()
+          if flow_class.__name__ != "GrantBotGrantFlow":
+              raise SystemExit("CrewAI Flow class failed to build")
+
+          state = GrantFlowState()
+          if state.safe_to_submit or state.submission_performed or not state.human_review_required:
+              raise SystemExit("CrewAI Flow human gate defaults are invalid")
+
+          schema = app.openapi()
+          if not schema["paths"]["/v26/agents/crew"]["post"].get("security"):
+              raise SystemExit("CrewAI execution endpoint is not protected")
+
+          print(
+              "CrewAI Flow smoke test passed:",
+              version("crewai"),
+              "agents=", AGENT_COUNT,
+              "orchestration=", ORCHESTRATION_MODE,
+          )
+          PY
+
+      - name: Run CrewAI integration regression tests
+        run: python -m pytest -q tests/test_crewai_runtime.py
