@@ -5,7 +5,9 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 
-NUMBER_RE = re.compile(r"(?<!\w)\$?\d[\d,]*(?:\.\d+)?%?(?!\w)")
+NUMBER_RE = re.compile(
+    r"(?<!\w)\$?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?%?(?!\w)"
+)
 WORD_RE = re.compile(r"[A-Za-z][A-Za-z'-]{2,}")
 EVIDENCE_RE = re.compile(
     r"\b(?:according to|data|evidence|report|study|survey|documented|verified|measured|tracked|evaluated|baseline|outcome|result)\b",
