@@ -20,13 +20,17 @@ TRUSTED_FACT_STATES = ["VERIFIED", "APPROVED"]
 
 def production_status_v30() -> dict[str, Any]:
     return {
-        "version": "30.0.0",
+        "version": "30.2.0",
         "base_production": v29_production_status(),
         "adaptive_intelligence": intelligence_status(),
         "automatic_sentence_provenance": True,
         "automatic_model_run_telemetry": True,
         "optional_adversarial_panel": True,
         "optional_budget_workplan_consistency": True,
+        "source_backed_application_packets": True,
+        "built_in_opportunities": ["publix-housing-2026"],
+        "application_packet_formats": ["JSON", "Markdown", "DOCX"],
+        "canonical_fact_store_only": True,
         "single_master_writer": True,
         "human_review_required": True,
         "external_submission_enabled": False,

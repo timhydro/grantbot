@@ -17,6 +17,12 @@ from grantbot.intelligence.adaptive_v30 import (
     score_opportunity,
     sentence_provenance,
 )
+from grantbot.intelligence.opportunity_v302 import (
+    assess_eligibility,
+    learned_opportunity_signal,
+    record_opportunity_adjudication,
+    source_completeness,
+)
 from grantbot.knowledge.canonical import current_facts
 from grantbot.security.auth import ADMIN, GRANT_WRITER, REVIEWER, Principal, require_roles
 
@@ -96,6 +102,27 @@ class PanelRequest(BaseModel):
     budget_context: dict[str, Any] = Field(default_factory=dict)
 
 
+class OpportunityAssessmentRequest(BaseModel):
+    opportunity_id: str = Field(min_length=1, max_length=300)
+    title: str = Field(min_length=1, max_length=1000)
+    funder: str = Field(default="", max_length=500)
+    description: str = Field(default="", max_length=300000)
+    eligibility: str = Field(default="", max_length=100000)
+    nofo_text: str = Field(default="", max_length=1000000)
+    source_url: str = Field(default="", max_length=4000)
+    extracted_questions: list[str] = Field(default_factory=list, max_length=1000)
+    extracted_requirements: list[str] = Field(default_factory=list, max_length=2000)
+
+
+class OpportunityAdjudicationRequest(BaseModel):
+    opportunity_id: str = Field(min_length=1, max_length=300)
+    title: str = Field(min_length=1, max_length=1000)
+    funder: str = Field(default="", max_length=500)
+    decision: str = Field(min_length=4, max_length=30)
+    rationale: str = Field(min_length=1, max_length=10000)
+    features: dict[str, Any] = Field(default_factory=dict)
+
+
 @router.get("/status")
 def status(
     principal: Principal = Depends(require_roles(ADMIN, GRANT_WRITER, REVIEWER)),
@@ -113,6 +140,62 @@ def opportunity_score(
 ) -> dict[str, Any]:
     del principal
     return score_opportunity(**payload.model_dump()).to_dict()
+
+
+@router.post("/opportunity-assessment")
+def opportunity_assessment(
+    payload: OpportunityAssessmentRequest,
+    principal: Principal = Depends(require_roles(ADMIN, GRANT_WRITER, REVIEWER)),
+) -> dict[str, Any]:
+    del principal
+    eligibility = assess_eligibility(
+        title=payload.title,
+        funder=payload.funder,
+        description=payload.description,
+        eligibility=payload.eligibility,
+        nofo_text=payload.nofo_text,
+    )
+    completeness = source_completeness(
+        title=payload.title,
+        funder=payload.funder,
+        source_url=payload.source_url,
+        eligibility=payload.eligibility,
+        nofo_text=payload.nofo_text,
+        extracted_questions=payload.extracted_questions,
+        extracted_requirements=payload.extracted_requirements,
+    )
+    learning = learned_opportunity_signal(title=payload.title, funder=payload.funder)
+    return {
+        "opportunity_id": payload.opportunity_id,
+        "eligibility": eligibility.to_dict(),
+        "source_completeness": completeness,
+        "learning_signal": learning,
+        "safe_to_draft": (
+            eligibility.decision == "DIRECT" and completeness["complete_for_drafting"]
+        ),
+        "human_review_required": True,
+    }
+
+
+@router.post("/opportunity-adjudications")
+def opportunity_adjudication(
+    payload: OpportunityAdjudicationRequest,
+    principal: Principal = Depends(require_roles(ADMIN, REVIEWER)),
+) -> dict[str, Any]:
+    try:
+        record_id = record_opportunity_adjudication(
+            opportunity_id=payload.opportunity_id,
+            title=payload.title,
+            funder=payload.funder,
+            decision=payload.decision,
+            rationale=payload.rationale,
+            reviewer=principal.actor,
+            human_approved=True,
+            features=payload.features,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"id": record_id, "recorded": True, "human_approved": True}
 
 
 @router.post("/model-runs")

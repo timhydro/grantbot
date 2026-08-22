@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "grantbot-pro"
-version = "30.0.0"
+version = "30.2.0"
 description = "Production adaptive multi-model funding intelligence, single-voice grant writing, cloud-first CrewAI orchestration, model telemetry, funder memory, opportunity portfolio scoring, sentence provenance, adversarial review, IRS Form 1023 preparation, deterministic quality gates, and human-reviewed application platform for BrokenGrowthMinistries"
 requires-python = ">=3.10,<3.14"
 dependencies = [
@@ -39,6 +39,13 @@ grantbot-irs1023-v29 = "grantbot.production.irs1023_cli:main"
 where = ["."]
 include = ["grantbot*"]
 exclude = ["data*", "tests*"]
+
+[tool.setuptools.package-data]
+grantbot = [
+    "knowledge/data/*.json",
+    "knowledge/data/*.md",
+    "opportunities/*.json",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

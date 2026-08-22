@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from grantbot.automation.opportunity_pipeline import Opportunity, analyze_opportunity
+from grantbot.knowledge.writer_facts import load_canonical_writer_facts
 from grantbot.writing.master_writer import write_answer
 from grantbot.writing.ollama_provider import OllamaProvider
 
@@ -70,61 +71,7 @@ def _atomic_write_json(path: Path, data: dict[str, Any]) -> None:
 
 
 def _load_facts() -> list[dict[str, Any]]:
-    try:
-        from grantbot.knowledge.fact_registry import FactRegistry
-    except ImportError:
-        return []
-
-    registry = FactRegistry()
-
-    raw = None
-
-    if hasattr(registry, "all") and callable(registry.all):
-        raw = registry.all()
-    elif hasattr(registry, "get_all") and callable(registry.get_all):
-        raw = registry.get_all()
-    elif hasattr(registry, "get_all_facts") and callable(registry.get_all_facts):
-        raw = registry.get_all_facts()
-    elif hasattr(registry, "_facts"):
-        raw = registry._facts
-
-    if raw is None:
-        return []
-
-    if isinstance(raw, dict):
-        if isinstance(raw.get("facts"), list):
-            raw = raw["facts"]
-        else:
-            raw = [
-                {
-                    "id": str(key),
-                    "category": "general",
-                    "key": str(key),
-                    "value": value,
-                    "status": "APPROVED",
-                    "source": "legacy_fact_registry",
-                }
-                for key, value in raw.items()
-            ]
-
-    facts: list[dict[str, Any]] = []
-
-    for item in raw:
-        if hasattr(item, "to_dict") and callable(item.to_dict):
-            fact = item.to_dict()
-        elif isinstance(item, dict):
-            fact = dict(item)
-        else:
-            continue
-
-        fact.setdefault("id", str(fact.get("key", "")))
-        fact.setdefault("category", "general")
-        fact.setdefault("key", fact.get("id", ""))
-        fact.setdefault("status", "APPROVED")
-        fact.setdefault("source", "fact_registry")
-        facts.append(fact)
-
-    return facts
+    return load_canonical_writer_facts(actor="application-package-v7")
 
 
 def _tokens(text: str) -> set[str]:
