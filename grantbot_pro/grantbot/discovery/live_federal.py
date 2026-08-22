@@ -17,6 +17,7 @@ from grantbot.discovery.grants_gov import (
 from grantbot.discovery.status_guard import (
     OpportunityState,
     evaluate_opportunity_status,
+    parse_deadline,
 )
 
 
@@ -84,6 +85,30 @@ def _result_sort_key(
         1 if item.get("hard_reject") else 0,
         -int(item.get("score", 0) or 0),
         str(item.get("title", "")).lower(),
+    )
+
+
+def _candidate_sort_key(
+    item: tuple[str, dict[str, Any]],
+    hit_keywords: dict[str, set[str]],
+) -> tuple[int, int, int, str]:
+    oid, hit = item
+    status = str(hit.get("oppStatus") or "").strip().upper()
+    status_rank = 0 if status == "POSTED" else 1
+    matched_keyword_rank = -len(hit_keywords.get(oid, set()))
+
+    deadline = parse_deadline(hit.get("closeDate"))
+    deadline_rank = (
+        deadline.toordinal()
+        if deadline is not None
+        else 9_999_999
+    )
+
+    return (
+        status_rank,
+        matched_keyword_rank,
+        deadline_rank,
+        str(hit.get("title", "")).lower(),
     )
 
 
@@ -173,7 +198,14 @@ def run_live_sweep(
 
     results: list[dict[str, Any]] = []
     errors = 0
-    ordered_hits = list(unique_hits.items())[:max_details]
+
+    ordered_hits = sorted(
+        unique_hits.items(),
+        key=lambda item: _candidate_sort_key(
+            item,
+            hit_keywords,
+        ),
+    )[:max_details]
 
     for oid, hit in ordered_hits:
         matched = sorted(hit_keywords.get(oid, set()))
