@@ -85,6 +85,7 @@ from grantbot.api.funding_live_v24 import router as funding_live_v24_router
 from grantbot.api.agentic_v26 import router as agentic_v26_router
 from grantbot.api.workflow_v27 import router as workflow_v27_router
 from grantbot.api.irs1023_v28 import router as irs1023_v28_router
+from grantbot.api.multimodel_v28 import router as multimodel_v28_router
 
 app.include_router(master_pipeline_v5_router)
 app.include_router(discovery_v6_router)
@@ -118,3 +119,4 @@ app.include_router(funding_live_v24_router)
 app.include_router(agentic_v26_router)
 app.include_router(workflow_v27_router)
 app.include_router(irs1023_v28_router)
+app.include_router(multimodel_v28_router)
