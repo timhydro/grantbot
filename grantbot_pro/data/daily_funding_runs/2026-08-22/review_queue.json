@@ -1,0 +1,90 @@
+{
+  "run_date": "2026-08-22",
+  "source_of_truth": "timhydro/grantbot",
+  "replit_runtime": "UNAVAILABLE_NO_MATCHING_GRANTBOT_APP",
+  "paid_usage_incurred": false,
+  "human_submission_required": true,
+  "candidates": [
+    {
+      "opportunity_id": "O-BJA-2026-172700",
+      "title": "BJA FY 2026 Second Chance Act Family-Based Substance Use Disorder Treatment Program",
+      "funder": "U.S. Department of Justice, Bureau of Justice Assistance",
+      "status": "OPEN",
+      "posted_date": "2026-08-17",
+      "grants_gov_deadline": "2026-09-24",
+      "award_ceiling_usd": 1000000,
+      "cost_share": "NO",
+      "fit": "VERY_HIGH_IF_PROGRAM_SCOPE_CONFIRMED",
+      "priority": 1,
+      "why_fit": [
+        "Directly funds family-based substance use disorder treatment and recovery support for parents with minor children or pregnant parents under correctional control.",
+        "Expressly allows nonprofit and faith-based organizations under Category 2, including nonprofits without 501(c)(3) status according to the Grants.gov applicant-type listing.",
+        "Strong overlap with Broken Growth Ministries' reentry, stabilization, family-support and recovery-oriented service model."
+      ],
+      "eligibility_route": "DIRECT_CATEGORY_2_SUBJECT_TO_FULL_NOFO_VERIFICATION",
+      "eligibility_note": "Official BJA/Grants.gov material states nonprofit and faith-based organizations may apply under Category 2. Full FY2026 packet must still be parsed for service-delivery, correctional-control, treatment-provider, partnership and registration requirements before treating the application as submission-ready.",
+      "source_urls": [
+        "https://www.grants.gov/search-results-detail/363638",
+        "https://bja.ojp.gov/funding/opportunities/o-bja-2026-172700"
+      ],
+      "pipeline": {
+        "source_verification": "COMPLETE",
+        "eligibility_tax_routing": "COMPLETE_WITH_PACKET_CAVEAT",
+        "strategic_fit": "COMPLETE",
+        "requirements_parsing": "STAGED",
+        "fact_verification": "STAGED",
+        "safe_autofill": "BLOCKED_PENDING_PROGRAM_AND_PARTNER_FACTS",
+        "narrative_drafting": "STAGED",
+        "budget_review": "NEEDS_USER",
+        "compliance_risk_review": "STAGED",
+        "final_qa": "PENDING",
+        "human_review": "READY_FOR_ACTION"
+      },
+      "needs_user": [
+        "Confirm whether Broken Growth will directly provide or formally partner with a qualified substance-use-disorder treatment provider.",
+        "Confirm the proposed correctional-control setting or referral/partnership pathway for eligible parents.",
+        "Confirm family-service design, staffing, partner commitments, budget, outcomes and any required clinical/licensure facts; do not infer or invent them."
+      ]
+    },
+    {
+      "opportunity_id": "AMERICORPS-RSVP-FY2027",
+      "title": "FY 2027 AmeriCorps Seniors RSVP",
+      "funder": "AmeriCorps",
+      "status": "OPEN",
+      "posted_or_updated_date": "2026-08-20",
+      "deadline": "2026-10-20T17:00:00-04:00",
+      "fit": "HIGH_OPERATING_AND_VOLUNTEER_CAPACITY",
+      "priority": 2,
+      "why_fit": [
+        "FY2027 priorities expressly include reducing homelessness, affordable-housing development or renovation, helping people experiencing homelessness find and maintain housing, behavioral-health and substance-use support, strong families and workforce re-entry support.",
+        "The program can build a structured 55+ volunteer corps around mentoring, navigation, housing support, recovery support and community-service functions.",
+        "Grants.gov lists nonprofits with and without 501(c)(3) status among eligible applicant types."
+      ],
+      "eligibility_route": "DIRECT_POTENTIAL_REQUIRES_NOFO_GEOGRAPHY_AND_SPONSOR_REVIEW",
+      "funding_amount": "NEEDS_PACKET_VERIFICATION",
+      "match_requirement": "NEEDS_PACKET_VERIFICATION",
+      "source_urls": [
+        "https://www.americorps.gov/funding-opportunity/fy-2027-americorps-seniors-rsvp",
+        "https://www.grants.gov/search-results-detail/363482"
+      ],
+      "pipeline": {
+        "source_verification": "COMPLETE",
+        "eligibility_tax_routing": "PRELIMINARY_COMPLETE",
+        "strategic_fit": "COMPLETE",
+        "requirements_parsing": "STAGED",
+        "fact_verification": "STAGED",
+        "safe_autofill": "BLOCKED_PENDING_NOFO_AND_BUDGET_FACTS",
+        "work_plan_drafting": "STAGED",
+        "budget_review": "NEEDS_USER",
+        "compliance_risk_review": "STAGED",
+        "final_qa": "PENDING",
+        "human_review": "READY_FOR_ACTION"
+      },
+      "needs_user": [
+        "Confirm the service geography/project area selected for the RSVP competition and whether that geography is available in the FY2027 notice.",
+        "Confirm proposed 55+ volunteer recruitment target, service roles and supervision model.",
+        "Confirm budget, required non-federal share or match after packet parsing, staffing and performance-measure commitments."
+      ]
+    }
+  ]
+}
