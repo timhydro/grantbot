@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from grantbot.agents.crewai_local import crewai_status, kickoff_local_grant_crew
+from grantbot.agents.crewai_runtime import crewai_status, kickoff_grant_crew
 from grantbot.agents.pipeline_v26 import AGENT_ROLES, build_execution_plan, write_and_plan
 from grantbot.agents.research_v26 import build_evidence_brief
 from grantbot.eligibility.tax_status import TaxStatus
@@ -47,6 +47,7 @@ class CrewRequest(BaseModel):
     question: str = Field(min_length=1, max_length=10000)
     max_words: int | None = Field(default=None, ge=1, le=10000)
     model: str | None = None
+    base_url: str | None = None
 
 
 class DiscoveryRequest(BaseModel):
@@ -73,7 +74,7 @@ def health() -> dict[str, Any]:
     return {
         "status": "ok",
         "version": 26,
-        "mode": "local-first-human-gated",
+        "mode": "cost-protected-human-gated",
         "roles": list(AGENT_ROLES),
         "crewai": crewai_status().to_dict(),
         "safe_to_submit": False,
@@ -147,21 +148,29 @@ def crew(payload: CrewRequest) -> dict[str, Any]:
             status_code=503,
             detail="CrewAI optional dependencies are not installed. Install GrantBot with: pip install -e '.[agents]'",
         )
-    if not status.ollama_available:
-        raise HTTPException(status_code=503, detail=status.error or "Local Ollama is unavailable")
+    if not status.available and payload.model is None:
+        raise HTTPException(status_code=503, detail=status.error or "No CrewAI runtime is available")
+
     try:
-        output = kickoff_local_grant_crew(
+        result = kickoff_grant_crew(
             dossier=payload.dossier,
             question=payload.question,
             max_words=payload.max_words,
             model=payload.model,
+            base_url=payload.base_url,
         )
     except (ValueError, RuntimeError) as exc:
         raise HTTPException(status_code=422 if isinstance(exc, ValueError) else 503, detail=str(exc)) from exc
+
     return {
         "status": "READY_FOR_HUMAN_REVIEW",
-        "output": output,
-        "provider": "local-ollama",
+        "output": result.output,
+        "provider": result.provider,
+        "model": result.model,
+        "staging_artifact": result.artifact_path,
+        "staging_sha256": result.artifact_sha256,
+        "external_side_effects_performed": False,
+        "submission_performed": False,
         "safe_to_submit": False,
     }
 
