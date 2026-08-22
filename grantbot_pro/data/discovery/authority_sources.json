@@ -1,0 +1,13 @@
+{
+  "CPD-2600-DC-0025": [
+    {
+      "url": "https://www.hud.gov/hud-partners/coc-program-competition",
+      "match_terms": [
+        "FY 2026 Continuum of Care Program Competition",
+        "FY 2026 Continuum of Care Competition",
+        "2026 CoC NOFO"
+      ],
+      "required": true
+    }
+  ]
+}

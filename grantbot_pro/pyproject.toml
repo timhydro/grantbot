@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "grantbot-pro"
-version = "27.0.0"
+version = "27.1.0"
 description = "Unified local-AI funding intelligence, agentic grant orchestration, persistent workflow control, canonical knowledge authority, and mission-aware grant application platform for BrokenGrowthMinistries"
 requires-python = ">=3.10,<3.14"
 dependencies = [
@@ -32,6 +32,7 @@ agents = [
 
 [project.scripts]
 grantbot = "grantbot.__main__:main"
+grantbot-live-federal = "grantbot.discovery.live_federal:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

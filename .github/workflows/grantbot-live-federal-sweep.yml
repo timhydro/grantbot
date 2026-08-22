@@ -1,0 +1,75 @@
+name: GrantBot Live Federal Sweep
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 13 * * *"
+  pull_request:
+    paths:
+      - "grantbot_pro/grantbot/discovery/**"
+      - "grantbot_pro/tests/test_live_federal_status.py"
+      - "grantbot_pro/data/discovery/authority_sources.json"
+      - "grantbot_pro/pyproject.toml"
+      - ".github/workflows/grantbot-live-federal-sweep.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  live-federal-sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    defaults:
+      run:
+        working-directory: grantbot_pro
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: grantbot_pro/pyproject.toml
+
+      - name: Install GrantBot
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+
+      - name: Static compile and CLI import check
+        run: |
+          python -m py_compile \
+            grantbot/discovery/status_guard.py \
+            grantbot/discovery/live_federal.py \
+            tests/test_live_federal_status.py
+          grantbot-live-federal --help >/dev/null
+
+      - name: Run status guard regression tests
+        run: |
+          python -m unittest -v tests.test_live_federal_status
+
+      - name: Run live federal funding sweep
+        if: github.event_name != 'pull_request'
+        run: |
+          mkdir -p live_artifacts
+          grantbot-live-federal \
+            --rows 20 \
+            --max-details 60 \
+            --top 30 \
+            --output live_artifacts/latest_federal_sweep.json \
+            | tee live_artifacts/live_federal_sweep.log
+
+      - name: Upload human-review staging artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: grantbot-live-federal-sweep
+          path: |
+            grantbot_pro/live_artifacts/latest_federal_sweep.json
+            grantbot_pro/live_artifacts/live_federal_sweep.log
+          if-no-files-found: error
+          retention-days: 30
