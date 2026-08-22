@@ -85,6 +85,7 @@ from grantbot.api.irs1023_v28 import router as irs1023_v28_router
 from grantbot.api.multimodel_v28 import router as multimodel_v28_router
 from grantbot.api.production_v29 import router as production_v29_router
 from grantbot.api.intelligence_v30 import router as intelligence_v30_router
+from grantbot.api.production_v30 import router as production_v30_router
 
 app.include_router(master_pipeline_v5_router)
 app.include_router(discovery_v6_router)
@@ -121,3 +122,4 @@ app.include_router(irs1023_v28_router)
 app.include_router(multimodel_v28_router)
 app.include_router(production_v29_router)
 app.include_router(intelligence_v30_router)
+app.include_router(production_v30_router)
